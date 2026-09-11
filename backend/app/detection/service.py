@@ -5,7 +5,8 @@ from app.models.security_event import SecurityEvent
 from app.models.alert import Alert, AlertStatus
 from app.models.detection_rule import DetectionRule
 from app.detection.engine import DetectionEngine
-from app.detection.evaluator import ThresholdEvaluator
+from app.detection.evaluator import ThresholdEvaluator, PatternEvaluator, SequenceEvaluator
+from app.detection.types import DetectionResult
 
 logger = logging.getLogger(__name__)
 
@@ -15,28 +16,26 @@ class DetectionService:
         try:
             rules = DetectionEngine.get_applicable_rules(db, event)
             for rule in rules:
-                is_triggered = False
+                result = None
                 if rule.rule_type == "THRESHOLD":
-                    is_triggered = ThresholdEvaluator.evaluate(db, rule, event)
+                    result = ThresholdEvaluator.evaluate(db, rule, event)
+                elif rule.rule_type == "PATTERN":
+                    result = PatternEvaluator.evaluate(db, rule, event)
+                elif rule.rule_type == "SEQUENCE":
+                    result = SequenceEvaluator.evaluate(db, rule, event)
                 
-                if is_triggered:
-                    DetectionService._generate_alert(db, rule, event)
+                if result and result.matched:
+                    DetectionService._generate_alert(db, result)
         except Exception as e:
             logger.error(f"Error during detection evaluation for event {event.id}: {str(e)}")
 
     @staticmethod
-    def _generate_alert(db: Session, rule: DetectionRule, event: SecurityEvent) -> None:
-        group_val = getattr(event, rule.group_by, None) if rule.group_by else None
-        
-        alert_title = rule.name
-        if group_val:
-            alert_title = f"{rule.name} ({rule.group_by}: {group_val})"
-            
+    def _generate_alert(db: Session, result: DetectionResult) -> None:
         stmt = select(Alert).where(
             and_(
-                Alert.rule_id == rule.id,
-                Alert.application_id == event.application_id,
-                Alert.title == alert_title,
+                Alert.rule_id == result.rule_id,
+                Alert.application_id == result.application_id,
+                Alert.title == result.title,
                 Alert.status.in_([AlertStatus.OPEN.value, AlertStatus.ACKNOWLEDGED.value])
             )
         )
@@ -45,14 +44,14 @@ class DetectionService:
             return # Suppress duplicate
             
         new_alert = Alert(
-            application_id=event.application_id,
-            security_event_id=event.id,
-            title=alert_title,
-            description=f"Rule '{rule.name}' triggered.\n{rule.description or ''}",
-            severity=rule.severity,
+            application_id=result.application_id,
+            security_event_id=result.event_id,
+            title=result.title,
+            description=result.description,
+            severity=result.severity,
             status=AlertStatus.OPEN.value,
-            rule_id=rule.id,
-            detected_at=event.timestamp
+            rule_id=result.rule_id,
+            detected_at=result.detected_at
         )
         db.add(new_alert)
         db.commit()

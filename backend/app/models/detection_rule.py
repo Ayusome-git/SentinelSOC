@@ -16,9 +16,14 @@ class DetectionRule(BaseModel):
     severity: Mapped[str] = mapped_column(String(50), nullable=False)
     event_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     
-    threshold: Mapped[int] = mapped_column(Integer, nullable=False)
-    window_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
-    group_by: Mapped[str] = mapped_column(String(100), nullable=False)
+    threshold: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    window_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    group_by: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    
+    category: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    mitre_technique: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    pattern: Mapped[Optional[str]] = mapped_column(String(2000), nullable=True)
+    distinct_field: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     
     application_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("applications.id", ondelete="CASCADE"), nullable=True, index=True)
     created_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)

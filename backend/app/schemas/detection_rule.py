@@ -10,9 +10,15 @@ class DetectionRuleBase(BaseModel):
     enabled: bool = Field(default=True)
     severity: str = Field(..., max_length=50)
     event_type: str = Field(..., max_length=100)
-    threshold: int = Field(..., ge=1)
-    window_seconds: int = Field(..., gt=0)
-    group_by: str = Field(..., max_length=100)
+    threshold: Optional[int] = Field(None, ge=1)
+    window_seconds: Optional[int] = Field(None, gt=0)
+    group_by: Optional[str] = Field(None, max_length=100)
+    
+    category: Optional[str] = Field(None, max_length=100)
+    mitre_technique: Optional[str] = Field(None, max_length=50)
+    pattern: Optional[str] = Field(None, max_length=2000)
+    distinct_field: Optional[str] = Field(None, max_length=100)
+    
     application_id: Optional[uuid.UUID] = None
 
 class DetectionRuleCreate(DetectionRuleBase):
@@ -25,6 +31,11 @@ class DetectionRuleUpdate(BaseModel):
     severity: Optional[str] = Field(None, max_length=50)
     threshold: Optional[int] = Field(None, ge=1)
     window_seconds: Optional[int] = Field(None, gt=0)
+    group_by: Optional[str] = Field(None, max_length=100)
+    category: Optional[str] = Field(None, max_length=100)
+    mitre_technique: Optional[str] = Field(None, max_length=50)
+    pattern: Optional[str] = Field(None, max_length=2000)
+    distinct_field: Optional[str] = Field(None, max_length=100)
 
 class DetectionRuleStatusUpdate(BaseModel):
     enabled: bool

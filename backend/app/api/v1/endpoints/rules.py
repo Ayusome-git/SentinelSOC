@@ -1,5 +1,5 @@
 import uuid
-from typing import Any
+from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, or_
@@ -23,31 +23,57 @@ router = APIRouter()
 def list_rules(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=100),
-    search: str = None
+    skip: int = 0,
+    limit: int = 100,
+    search: Optional[str] = None,
+    category: Optional[str] = None,
+    severity: Optional[str] = None,
+    enabled: Optional[bool] = None,
+    application_id: Optional[uuid.UUID] = None,
+    rule_type: Optional[str] = None
 ) -> Any:
+    """
+    Retrieve detection rules with optional filtering.
+    """
     if not has_permission(current_user.role, Permission.RULES_READ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
 
-    query = db.query(DetectionRule)
+    stmt = select(DetectionRule)
+    
+    conditions = []
+    
     if search:
-        query = query.filter(
+        conditions.append(
             or_(
                 DetectionRule.name.ilike(f"%{search}%"),
                 DetectionRule.event_type.ilike(f"%{search}%")
             )
         )
+    if category:
+        conditions.append(DetectionRule.category == category)
+    if severity:
+        conditions.append(DetectionRule.severity == severity)
+    if enabled is not None:
+        conditions.append(DetectionRule.enabled == enabled)
+    if application_id:
+        conditions.append(DetectionRule.application_id == application_id)
+    if rule_type:
+        conditions.append(DetectionRule.rule_type == rule_type)
+        
+    if conditions:
+        stmt = stmt.where(and_(*conditions))
     
-    total = query.count()
-    query = query.order_by(desc(DetectionRule.created_at))
-    rules = query.offset((page - 1) * page_size).limit(page_size).all()
+    from sqlalchemy import func, and_
+    total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    stmt = stmt.order_by(desc(DetectionRule.created_at)).offset(skip).limit(limit)
+    
+    rules = db.scalars(stmt).all()
     
     return DetectionRuleListResponse(
         items=rules,
         total=total,
-        page=page,
-        size=page_size
+        page=(skip // limit) + 1 if limit > 0 else 1,
+        size=limit
     )
 
 @router.get("/{rule_id}", response_model=DetectionRuleResponse)
@@ -85,6 +111,10 @@ def create_rule(
         threshold=rule_in.threshold,
         window_seconds=rule_in.window_seconds,
         group_by=rule_in.group_by,
+        category=rule_in.category,
+        mitre_technique=rule_in.mitre_technique,
+        pattern=rule_in.pattern,
+        distinct_field=rule_in.distinct_field,
         application_id=rule_in.application_id,
         created_by=current_user.id
     )
