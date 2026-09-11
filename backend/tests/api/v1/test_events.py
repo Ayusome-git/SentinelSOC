@@ -130,11 +130,11 @@ def test_list_events_advanced_filters(db_session):
     )
     api_key = key_resp.json()["api_key"]
     
-    client.post(
+    resp_ingest = client.post(
         f"{settings.API_V1_STR}/events",
         headers={"X-API-Key": api_key},
         json={
-            "event_type": "CUSTOM_ALERT",
+            "event_type": "SUSPICIOUS_REQUEST",
             "severity": "CRITICAL",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "source_ip": "10.0.0.2",
@@ -143,6 +143,7 @@ def test_list_events_advanced_filters(db_session):
             "request_path": "/admin/panel"
         }
     )
+    assert resp_ingest.status_code == 201
     
     # Test search by username
     resp = client.get(f"{settings.API_V1_STR}/events?search=hacker", headers=_auth_header(admin))
@@ -207,6 +208,9 @@ def test_90_days_limit(db_session):
     start = datetime.now(timezone.utc) - timedelta(days=100)
     end = datetime.now(timezone.utc)
     
-    resp = client.get(f"{settings.API_V1_STR}/events?start_date={start.isoformat()}&end_date={end.isoformat()}", headers=_auth_header(admin))
+    start_str = start.isoformat().replace("+", "%2B")
+    end_str = end.isoformat().replace("+", "%2B")
+    
+    resp = client.get(f"{settings.API_V1_STR}/events?start_date={start_str}&end_date={end_str}", headers=_auth_header(admin))
     assert resp.status_code == 400
     assert "90 days" in resp.json()["detail"]

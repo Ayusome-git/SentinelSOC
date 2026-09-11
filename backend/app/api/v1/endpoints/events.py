@@ -44,7 +44,7 @@ def get_events(
     request_id: Optional[str] = None,
     session_id: Optional[str] = None,
     search: Optional[str] = None,
-    sort_dir: str = Query("newest", regex="^(newest|oldest)$")
+    sort_dir: str = Query("newest", pattern="^(newest|oldest)$")
 ):
     """
     List security events. Requires EVENTS_READ permission.

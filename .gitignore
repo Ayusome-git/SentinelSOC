@@ -4,18 +4,42 @@ __pycache__/
 *$py.class
 venv/
 env/
+.venv/
 .pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+.mypy_cache/
+.tox/
 
-# Node
+# Node & Next.js
 node_modules/
 .next/
 out/
-build/
-dist/
+.vercel/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
 # Environment
 .env
+.env.local
+.env.*.local
+*.env
 
-# OS
+# SQLite
+*.sqlite3
+*.db
+test.db
+
+# IDEs / Editors
+.vscode/
+.idea/
+*.swp
+*.swo
 .DS_Store
 Thumbs.db
+.gemini/

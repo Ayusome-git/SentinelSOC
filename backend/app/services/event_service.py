@@ -241,13 +241,23 @@ def get_event_analytics(
     else:
         trunc = "week"
         
-    timeline_rows = query.with_entities(func.date_trunc(trunc, SecurityEvent.timestamp).label("ts"), func.count(SecurityEvent.id)).group_by("ts").order_by("ts").all()
-    
+    if db.bind.dialect.name == "sqlite":
+        if trunc == "hour":
+            fmt = "%Y-%m-%d %H:00:00"
+        elif trunc == "day":
+            fmt = "%Y-%m-%d 00:00:00"
+        else:
+            fmt = "%Y-%m-01 00:00:00"
+        timeline_rows = query.with_entities(func.strftime(fmt, SecurityEvent.timestamp).label("ts"), func.count(SecurityEvent.id)).group_by("ts").order_by("ts").all()
+    else:
+        timeline_rows = query.with_entities(func.date_trunc(trunc, SecurityEvent.timestamp).label("ts"), func.count(SecurityEvent.id)).group_by("ts").order_by("ts").all()
+        
     timeline = []
     for ts, cnt in timeline_rows:
         if ts:
-            # Need to ensure tzinfo
-            if ts.tzinfo is None:
+            if isinstance(ts, str):
+                ts = datetime.strptime(ts, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+            elif ts.tzinfo is None:
                 ts = ts.replace(tzinfo=timezone.utc)
             timeline.append(EventTimelinePoint(timestamp=ts, count=cnt))
 
