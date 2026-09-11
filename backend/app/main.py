@@ -48,6 +48,8 @@ app.include_router(applications.router, prefix="/api/v1/applications", tags=["ap
 app.include_router(events.router, prefix="/api/v1/events", tags=["events"])
 from app.api.v1.endpoints import dashboard
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
+from app.api.v1.endpoints import rules
+app.include_router(rules.router, prefix="/api/v1/rules", tags=["rules"])
 
 @app.get("/")
 def root():

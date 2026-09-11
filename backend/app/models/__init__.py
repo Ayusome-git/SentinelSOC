@@ -6,6 +6,7 @@ from app.models.security_event import SecurityEvent, EventSeverity
 from app.models.alert import Alert, AlertStatus, incident_alerts
 from app.models.incident import Incident, IncidentStatus
 from app.models.audit_log import AuditLog
+from app.models.detection_rule import DetectionRule
 
 # Import all models here so Alembic can discover them
 __all__ = [
@@ -24,5 +25,6 @@ __all__ = [
     "incident_alerts",
     "Incident",
     "IncidentStatus",
-    "AuditLog"
+    "AuditLog",
+    "DetectionRule"
 ]

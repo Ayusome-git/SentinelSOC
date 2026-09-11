@@ -8,6 +8,8 @@ from typing import Optional, List
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
+from app.detection.service import DetectionService
+
 def normalize_and_store_event(db: Session, application: Application, event_in: EventCreate) -> str:
     source_ip_str = str(event_in.source_ip)
     
@@ -58,6 +60,8 @@ def normalize_and_store_event(db: Session, application: Application, event_in: E
     db.add(db_event)
     db.commit()
     db.refresh(db_event)
+    
+    DetectionService.evaluate_event(db, db_event)
     
     return str(db_event.id)
 
