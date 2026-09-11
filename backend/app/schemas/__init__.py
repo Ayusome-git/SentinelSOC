@@ -4,3 +4,4 @@ from .security_event import EventCreate, EventResponse, EventListResponse, Event
 from .alert import AlertBase, AlertCreate, AlertResponse
 from .incident import IncidentBase, IncidentCreate, IncidentResponse
 from .audit_log import AuditLogBase, AuditLogCreate, AuditLogResponse
+from .dashboard import DashboardOverviewResponse
