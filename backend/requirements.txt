@@ -1,0 +1,15 @@
+fastapi>=0.110.0
+uvicorn>=0.27.0
+pydantic>=2.10.0
+pydantic-settings>=2.1.0
+sqlalchemy>=2.0.21
+psycopg[binary]
+alembic>=1.12.0
+python-dotenv>=1.0.0
+pytest>=7.4.2
+httpx>=0.25.0
+passlib[argon2]==1.7.4
+argon2-cffi>=23.1.0
+pyjwt>=2.8.0
+python-multipart>=0.0.6
+email-validator>=2.0.0
