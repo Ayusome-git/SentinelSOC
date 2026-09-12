@@ -31,4 +31,5 @@ class Application(BaseModel):
     api_keys: Mapped[List["ApplicationApiKey"]] = relationship("ApplicationApiKey", back_populates="application")
     events: Mapped[List["SecurityEvent"]] = relationship("SecurityEvent", back_populates="application")
     alerts: Mapped[List["Alert"]] = relationship("Alert", back_populates="application")
+    correlations: Mapped[List["Correlation"]] = relationship("Correlation", back_populates="application")
     incidents: Mapped[List["Incident"]] = relationship("Incident", back_populates="application")

@@ -4,6 +4,7 @@ from app.models.application import Application, AppEnvironment, AppStatus
 from app.models.application_api_key import ApplicationApiKey
 from app.models.security_event import SecurityEvent, EventSeverity
 from app.models.alert import Alert, AlertStatus, incident_alerts
+from app.models.alert_comment import AlertComment
 from app.models.incident import Incident, IncidentStatus
 from app.models.audit_log import AuditLog
 from app.models.detection_rule import DetectionRule

@@ -19,6 +19,9 @@ class AlertCreate(AlertBase):
     security_event_id: Optional[uuid.UUID] = None
     detected_at: datetime
 
+class AlertAssigneeUpdate(BaseModel):
+    assigned_to: Optional[uuid.UUID]
+
 class AlertResponse(AlertBase):
     id: uuid.UUID
     application_id: uuid.UUID
@@ -37,3 +40,32 @@ class AlertListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+class AlertCommentCreate(BaseModel):
+    comment: str
+
+class AlertCommentResponse(BaseModel):
+    id: uuid.UUID
+    alert_id: uuid.UUID
+    user_id: uuid.UUID
+    comment: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class AlertSummary(BaseModel):
+    total: int
+    open: int
+    acknowledged: int
+    resolved: int
+    false_positive: int
+    critical: int
+    high: int
+    unassigned: int
+    average_risk_score: float
+
+class BulkActionRequest(BaseModel):
+    alert_ids: list[uuid.UUID]
+    action: str # ACKNOWLEDGE, ASSIGN, RESOLVE, FALSE_POSITIVE
+    assigned_to: Optional[uuid.UUID] = None

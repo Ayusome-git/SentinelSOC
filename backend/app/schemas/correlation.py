@@ -71,6 +71,7 @@ class CorrelationEvidence(BaseModel):
 
 class CorrelationResponse(CorrelationBase):
     id: UUID
+    generated_alert_id: Optional[UUID] = None
     rule: Optional[CorrelationRuleResponse] = None
     evidence: Optional[List[CorrelationEvidence]] = None
     

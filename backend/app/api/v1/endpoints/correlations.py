@@ -120,6 +120,8 @@ def get_correlation(
     
     resp = CorrelationResponse.model_validate(correlation)
     resp.evidence = evidence_list
+    if correlation.alert:
+        resp.generated_alert_id = correlation.alert.id
     
     return resp
 

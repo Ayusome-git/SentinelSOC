@@ -50,9 +50,13 @@ class Correlation(BaseModel):
 
     # Relationships
     rule: Mapped[Optional["CorrelationRule"]] = relationship("CorrelationRule")
-    application: Mapped["Application"] = relationship("Application")
+    application: Mapped["Application"] = relationship("Application", back_populates="correlations")
     events: Mapped[List["SecurityEvent"]] = relationship("SecurityEvent", secondary=correlation_events)
     alerts_evidence: Mapped[List["Alert"]] = relationship("Alert", secondary=correlation_alerts, foreign_keys=[correlation_alerts.c.correlation_id, correlation_alerts.c.alert_id])
     
     # Generated alert
     alert: Mapped[Optional["Alert"]] = relationship("Alert", back_populates="correlation", foreign_keys="[Alert.correlation_id]")
+
+    @property
+    def generated_alert_id(self):
+        return self.alert.id if self.alert else None

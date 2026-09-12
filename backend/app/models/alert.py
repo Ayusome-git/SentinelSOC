@@ -50,3 +50,4 @@ class Alert(BaseModel):
     assignee: Mapped[Optional["User"]] = relationship("User", back_populates="assigned_alerts")
     incidents: Mapped[List["Incident"]] = relationship("Incident", secondary=incident_alerts, back_populates="alerts")
     correlation: Mapped[Optional["Correlation"]] = relationship("Correlation", back_populates="alert", foreign_keys=[correlation_id])
+    comments: Mapped[List["AlertComment"]] = relationship("AlertComment", back_populates="alert", cascade="all, delete-orphan", order_by="asc(AlertComment.created_at)")
