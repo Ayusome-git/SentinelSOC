@@ -63,6 +63,10 @@ def normalize_and_store_event(db: Session, application: Application, event_in: E
     
     DetectionService.evaluate_event(db, db_event)
     
+    # Trigger Correlation Engine
+    from app.correlation.service import CorrelationService
+    CorrelationService.evaluate_event(db, db_event)
+    
     return str(db_event.id)
 
 def _build_filter_query(

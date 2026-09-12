@@ -50,6 +50,10 @@ from app.api.v1.endpoints import dashboard
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
 from app.api.v1.endpoints import rules
 app.include_router(rules.router, prefix="/api/v1/rules", tags=["rules"])
+from app.api.v1.endpoints import correlations
+app.include_router(correlations.router, prefix="/api/v1/correlations", tags=["correlations"])
+from app.api.v1.endpoints import alerts
+app.include_router(alerts.router, prefix="/api/v1/alerts", tags=["alerts"])
 
 @app.get("/")
 def root():

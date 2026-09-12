@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Optional
+from typing import Optional, Dict, Any
 from datetime import datetime
 import uuid
 from app.models.alert import AlertStatus
@@ -10,6 +10,8 @@ class AlertBase(BaseModel):
     severity: str
     status: AlertStatus = AlertStatus.OPEN
     risk_score: Optional[int] = None
+    risk_level: Optional[str] = None
+    risk_factors: Optional[Dict[str, Any]] = None
     rule_id: Optional[uuid.UUID] = None
 
 class AlertCreate(AlertBase):
@@ -29,3 +31,9 @@ class AlertResponse(AlertBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class AlertListResponse(BaseModel):
+    items: list[AlertResponse]
+    total: int
+    page: int
+    page_size: int

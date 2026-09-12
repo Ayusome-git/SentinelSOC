@@ -129,6 +129,16 @@ def get_dashboard_overview(db: Session, start_date: datetime, end_date: datetime
     # 10. Latest Event Timestamp
     latest = base_query.with_entities(SecurityEvent.timestamp).order_by(desc(SecurityEvent.timestamp)).first()
     latest_event_timestamp = latest[0] if latest else None
+    
+    # 11. Risk Summary
+    from app.models.alert import Alert
+    risk_rows = db.query(Alert.risk_level, func.count(Alert.id)).filter(
+        Alert.detected_at >= start_date,
+        Alert.detected_at <= end_date,
+        Alert.risk_level.is_not(None)
+    ).group_by(Alert.risk_level).all()
+    
+    risk_summary = {level: count for level, count in risk_rows if level}
 
     return DashboardOverviewResponse(
         time_range=TimeRange(start=start_date, end=end_date),
@@ -143,6 +153,7 @@ def get_dashboard_overview(db: Session, start_date: datetime, end_date: datetime
         application_status=application_status,
         environment_distribution=environment_distribution,
         production_events=production_events,
+        risk_summary=risk_summary,
         event_timeline=timeline,
         latest_event_timestamp=latest_event_timestamp,
         recent_events=recent_events

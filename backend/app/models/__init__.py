@@ -7,6 +7,8 @@ from app.models.alert import Alert, AlertStatus, incident_alerts
 from app.models.incident import Incident, IncidentStatus
 from app.models.audit_log import AuditLog
 from app.models.detection_rule import DetectionRule
+from app.models.correlation_rule import CorrelationRule
+from app.models.correlation import Correlation, CorrelationStatus, correlation_events, correlation_alerts
 
 # Import all models here so Alembic can discover them
 __all__ = [
@@ -26,5 +28,10 @@ __all__ = [
     "Incident",
     "IncidentStatus",
     "AuditLog",
-    "DetectionRule"
+    "DetectionRule",
+    "CorrelationRule",
+    "Correlation",
+    "CorrelationStatus",
+    "correlation_events",
+    "correlation_alerts"
 ]

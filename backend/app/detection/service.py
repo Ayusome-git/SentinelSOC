@@ -55,3 +55,11 @@ class DetectionService:
         )
         db.add(new_alert)
         db.commit()
+        
+        # Calculate risk score
+        from app.risk.service import RiskScoringService
+        RiskScoringService.recalculate_alert(db, new_alert.id)
+        
+        # Evaluate correlation
+        from app.correlation.service import CorrelationService
+        CorrelationService.evaluate_alert(db, new_alert)

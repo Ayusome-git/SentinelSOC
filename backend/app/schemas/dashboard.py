@@ -33,6 +33,7 @@ class DashboardOverviewResponse(BaseModel):
     application_status: Dict[str, int]
     environment_distribution: Dict[str, int]
     production_events: int
+    risk_summary: Optional[Dict[str, int]] = None
     event_timeline: List[Dict[str, int | str]]  # Format: [{"timestamp": "...", "count": 0}]
     latest_event_timestamp: Optional[datetime]
     recent_events: List[RecentEvent]

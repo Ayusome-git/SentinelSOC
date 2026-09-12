@@ -41,6 +41,10 @@ class Permission(str, enum.Enum):
     RULES_READ = "RULES_READ"
     RULES_MANAGE = "RULES_MANAGE"
 
+    # Correlations
+    CORRELATIONS_READ = "CORRELATIONS_READ"
+    CORRELATIONS_MANAGE = "CORRELATIONS_MANAGE"
+
 
 # Centralized role → permissions mapping.
 # This is the authoritative matrix — extend it as new permissions are added.
@@ -59,6 +63,8 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
         Permission.SETTINGS_MANAGE,
         Permission.RULES_READ,
         Permission.RULES_MANAGE,
+        Permission.CORRELATIONS_READ,
+        Permission.CORRELATIONS_MANAGE,
     },
     UserRole.ANALYST: {
         Permission.APPLICATIONS_READ,
@@ -69,6 +75,8 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
         Permission.INCIDENTS_MANAGE,
         Permission.SETTINGS_READ,
         Permission.RULES_READ,
+        Permission.CORRELATIONS_READ,
+        Permission.CORRELATIONS_MANAGE,
     },
     UserRole.VIEWER: {
         Permission.APPLICATIONS_READ,
@@ -76,6 +84,7 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
         Permission.ALERTS_READ,
         Permission.INCIDENTS_READ,
         Permission.SETTINGS_READ,
+        Permission.CORRELATIONS_READ,
     },
 }
 

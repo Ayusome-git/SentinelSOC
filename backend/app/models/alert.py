@@ -3,6 +3,7 @@ import enum
 from typing import List, Optional
 from datetime import datetime
 from sqlalchemy import String, ForeignKey, Integer, Table, Column
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import BaseModel, Base
 
@@ -31,8 +32,11 @@ class Alert(BaseModel):
     severity: Mapped[str] = mapped_column(String(50), nullable=False) # e.g. INFO, LOW, MEDIUM, HIGH, CRITICAL
     status: Mapped[AlertStatus] = mapped_column(String(50), default=AlertStatus.OPEN.value, nullable=False)
     risk_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    risk_level: Mapped[Optional[str]] = mapped_column(String(50), nullable=True) # LOW, MODERATE, HIGH, CRITICAL
+    risk_factors: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
     
     rule_id: Mapped[Optional[uuid.UUID]] = mapped_column(nullable=True) # Future use
+    correlation_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("correlations.id", ondelete="SET NULL"), nullable=True)
     
     detected_at: Mapped[datetime] = mapped_column(nullable=False)
     acknowledged_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
@@ -45,3 +49,4 @@ class Alert(BaseModel):
     security_event: Mapped[Optional["SecurityEvent"]] = relationship("SecurityEvent", back_populates="alerts")
     assignee: Mapped[Optional["User"]] = relationship("User", back_populates="assigned_alerts")
     incidents: Mapped[List["Incident"]] = relationship("Incident", secondary=incident_alerts, back_populates="alerts")
+    correlation: Mapped[Optional["Correlation"]] = relationship("Correlation", back_populates="alert", foreign_keys=[correlation_id])
