@@ -275,3 +275,18 @@ def get_alert_risk(
         "factors": alert.risk_factors,
         "calculated_at": alert.updated_at
     }
+
+@router.post("/{alert_id}/create-incident", response_model=dict)
+def create_incident_from_alert(
+    req: Request,
+    alert_id: UUID = Path(...),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.require_permission(Permission.INCIDENTS_MANAGE)),
+):
+    from app.services.incident_service import IncidentService
+    alert = db.query(Alert).filter(Alert.id == alert_id).first()
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+        
+    incident = IncidentService.create_from_alert(db, alert, current_user, req)
+    return {"message": "Incident created", "incident_id": str(incident.id), "incident_number": incident.incident_number}

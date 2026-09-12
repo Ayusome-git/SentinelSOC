@@ -2,7 +2,7 @@ import uuid
 import enum
 from typing import List, Optional, Any
 from datetime import datetime, timezone
-from sqlalchemy import String, ForeignKey, DateTime, Index
+from sqlalchemy import String, ForeignKey, Integer, Table, Column, DateTime, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import BaseModel
@@ -13,6 +13,15 @@ class EventSeverity(str, enum.Enum):
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
     CRITICAL = "CRITICAL"
+
+incident_events = Table(
+    "incident_events",
+    BaseModel.metadata,
+    Column("incident_id", ForeignKey("incidents.id", ondelete="CASCADE"), primary_key=True),
+    Column("security_event_id", ForeignKey("security_events.id", ondelete="CASCADE"), primary_key=True),
+    Column("sequence_position", Integer, nullable=True),
+    Column("created_at", DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False),
+)
 
 class SecurityEvent(BaseModel):
     __tablename__ = "security_events"
@@ -38,6 +47,7 @@ class SecurityEvent(BaseModel):
     # Relationships
     application: Mapped["Application"] = relationship("Application", back_populates="events")
     alerts: Mapped[List["Alert"]] = relationship("Alert", back_populates="security_event")
+    incidents: Mapped[List["Incident"]] = relationship("Incident", secondary=incident_events, back_populates="events")
 
     # Composite Indexes
     __table_args__ = (

@@ -120,3 +120,12 @@ class CorrelationService:
         # Calculate risk score for correlation (and its alert)
         from app.risk.service import RiskScoringService
         RiskScoringService.recalculate_correlation(db, correlation.id)
+        
+        # Auto-create Incident if critical or high risk
+        db.refresh(correlation)
+        if correlation.severity == "CRITICAL" or (correlation.risk_score and correlation.risk_score >= 75):
+            try:
+                from app.services.incident_service import IncidentService
+                IncidentService.create_from_correlation(db, correlation, actor=None, auto=True)
+            except Exception as e:
+                logger.error(f"Error auto-creating incident for correlation {correlation.id}: {str(e)}")

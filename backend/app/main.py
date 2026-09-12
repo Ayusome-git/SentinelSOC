@@ -54,6 +54,8 @@ from app.api.v1.endpoints import correlations
 app.include_router(correlations.router, prefix="/api/v1/correlations", tags=["correlations"])
 from app.api.v1.endpoints import alerts
 app.include_router(alerts.router, prefix="/api/v1/alerts", tags=["alerts"])
+from app.api.v1.endpoints import incidents
+app.include_router(incidents.router, prefix="/api/v1/incidents", tags=["incidents"])
 
 @app.get("/")
 def root():

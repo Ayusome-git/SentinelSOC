@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from fastapi import APIRouter, Depends, HTTPException, Query, Path, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from typing import List, Optional
@@ -144,3 +144,18 @@ def update_correlation_status(
     db.refresh(correlation)
     
     return CorrelationResponse.model_validate(correlation)
+
+@router.post("/{correlation_id}/create-incident", response_model=dict)
+def create_incident_from_correlation(
+    req: Request,
+    correlation_id: UUID = Path(...),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.require_permission(Permission.INCIDENTS_MANAGE)),
+):
+    from app.services.incident_service import IncidentService
+    correlation = db.query(Correlation).filter(Correlation.id == correlation_id).first()
+    if not correlation:
+        raise HTTPException(status_code=404, detail="Correlation not found")
+        
+    incident = IncidentService.create_from_correlation(db, correlation, current_user, req)
+    return {"message": "Incident created", "incident_id": str(incident.id), "incident_number": incident.incident_number}

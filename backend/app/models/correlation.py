@@ -56,6 +56,7 @@ class Correlation(BaseModel):
     
     # Generated alert
     alert: Mapped[Optional["Alert"]] = relationship("Alert", back_populates="correlation", foreign_keys="[Alert.correlation_id]")
+    incidents: Mapped[List["Incident"]] = relationship("Incident", back_populates="correlation")
 
     @property
     def generated_alert_id(self):

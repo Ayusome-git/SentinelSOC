@@ -6,6 +6,8 @@ from app.models.security_event import SecurityEvent, EventSeverity
 from app.models.alert import Alert, AlertStatus, incident_alerts
 from app.models.alert_comment import AlertComment
 from app.models.incident import Incident, IncidentStatus
+from app.models.incident_comment import IncidentComment
+from app.models.incident_sequence import IncidentSequence
 from app.models.audit_log import AuditLog
 from app.models.detection_rule import DetectionRule
 from app.models.correlation_rule import CorrelationRule
@@ -28,6 +30,9 @@ __all__ = [
     "incident_alerts",
     "Incident",
     "IncidentStatus",
+    "IncidentSequence",
+    "IncidentComment",
+    "AlertComment",
     "AuditLog",
     "DetectionRule",
     "CorrelationRule",
