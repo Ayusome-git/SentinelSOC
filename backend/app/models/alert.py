@@ -13,6 +13,12 @@ class AlertStatus(str, enum.Enum):
     RESOLVED = "RESOLVED"
     FALSE_POSITIVE = "FALSE_POSITIVE"
 
+class DetectionSource(str, enum.Enum):
+    RULE = "RULE"
+    ML = "ML"
+    CORRELATION = "CORRELATION"
+    MANUAL = "MANUAL"
+
 # Association table for incidents <-> alerts
 incident_alerts = Table(
     "incident_alerts",
@@ -31,6 +37,7 @@ class Alert(BaseModel):
     description: Mapped[Optional[str]] = mapped_column(String(2000), nullable=True)
     severity: Mapped[str] = mapped_column(String(50), nullable=False) # e.g. INFO, LOW, MEDIUM, HIGH, CRITICAL
     status: Mapped[AlertStatus] = mapped_column(String(50), default=AlertStatus.OPEN.value, nullable=False)
+    detection_source: Mapped[DetectionSource] = mapped_column(String(50), default=DetectionSource.RULE.value, nullable=False)
     risk_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     risk_level: Mapped[Optional[str]] = mapped_column(String(50), nullable=True) # LOW, MODERATE, HIGH, CRITICAL
     risk_factors: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)

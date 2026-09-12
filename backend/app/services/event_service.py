@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from app.detection.service import DetectionService
+from app.services.ml_anomaly_service import MLAnomalyDetectionService
 
 def normalize_and_store_event(db: Session, application: Application, event_in: EventCreate) -> str:
     source_ip_str = str(event_in.source_ip)
@@ -66,6 +67,10 @@ def normalize_and_store_event(db: Session, application: Application, event_in: E
     # Trigger Correlation Engine
     from app.correlation.service import CorrelationService
     CorrelationService.evaluate_event(db, db_event)
+
+    # Note: MLAnomalyDetectionService evaluates fixed 5-minute windows.
+    # We trigger this asynchronously via FastAPI BackgroundTasks in the endpoint.
+    # To keep event_service decoupled from BackgroundTasks, the endpoint will call it.
     
     return str(db_event.id)
 

@@ -224,3 +224,13 @@ class RepeatedActivityFactor:
         )
         count = len(db.execute(stmt).scalars().all())
         return RepeatedActivityFactor._calculate_score(count)
+
+class MLAnomalyFactor:
+    @staticmethod
+    def calculate_for_alert(alert: Alert) -> int:
+        if alert.detection_source == "ML":
+            # Return a fixed risk contribution for ML, or we could parse the anomaly score from description
+            # but the alert itself doesn't store the raw score separately except in description.
+            # Let's give a strong base risk factor for ML anomalies.
+            return 20
+        return 0

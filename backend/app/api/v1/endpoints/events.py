@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from datetime import datetime
@@ -7,6 +7,7 @@ from uuid import UUID
 from app.api import deps
 from app.schemas.security_event import EventCreate, EventListResponse, EventAnalyticsResponse
 from app.services.event_service import normalize_and_store_event, list_events, get_event_analytics
+from app.services.ml_anomaly_service import MLAnomalyDetectionService
 from app.models.application import Application
 from app.models.user import User
 
@@ -17,13 +18,22 @@ def ingest_event(
     *,
     db: Session = Depends(deps.get_db),
     application: Application = Depends(deps.get_application_from_api_key),
-    event_in: EventCreate
+    event_in: EventCreate,
+    background_tasks: BackgroundTasks
 ):
     """
     Ingest a security event from an external application.
     Must be authenticated with an X-API-Key header.
     """
     event_id = normalize_and_store_event(db=db, application=application, event_in=event_in)
+    
+    # Trigger background ML anomaly detection for the previously completed window
+    background_tasks.add_task(
+        MLAnomalyDetectionService.trigger_detection_for_latest_window,
+        db=db,
+        application_id=application.id
+    )
+    
     return {"event_id": event_id, "status": "accepted"}
 
 @router.get("", response_model=EventListResponse)

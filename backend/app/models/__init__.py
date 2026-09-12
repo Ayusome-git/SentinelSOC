@@ -7,6 +7,8 @@ from app.models.alert import Alert, AlertStatus, incident_alerts
 from app.models.alert_comment import AlertComment
 from app.models.incident import Incident, IncidentStatus
 from app.models.incident_comment import IncidentComment
+from app.models.incident_evidence import IncidentEvidence, EvidenceType
+from app.models.ml_model import MLModel, MLModelStatus
 from app.models.incident_sequence import IncidentSequence
 from app.models.audit_log import AuditLog
 from app.models.detection_rule import DetectionRule
@@ -32,6 +34,8 @@ __all__ = [
     "IncidentStatus",
     "IncidentSequence",
     "IncidentComment",
+    "IncidentEvidence",
+    "EvidenceType",
     "AlertComment",
     "AuditLog",
     "DetectionRule",

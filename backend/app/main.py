@@ -56,6 +56,8 @@ from app.api.v1.endpoints import alerts
 app.include_router(alerts.router, prefix="/api/v1/alerts", tags=["alerts"])
 from app.api.v1.endpoints import incidents
 app.include_router(incidents.router, prefix="/api/v1/incidents", tags=["incidents"])
+from app.api.v1.endpoints import ml
+app.include_router(ml.router, prefix="/api/v1/ml", tags=["ml"])
 
 @app.get("/")
 def root():

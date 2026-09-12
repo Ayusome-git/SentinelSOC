@@ -13,7 +13,8 @@ from app.core.permissions import Permission
 from app.schemas.incident import (
     IncidentCreate, IncidentUpdate, IncidentStatusUpdate, IncidentAssigneeUpdate,
     IncidentResponse, IncidentListResponse, IncidentSummaryResponse,
-    IncidentAlertsLink, IncidentEventsLink, IncidentCommentCreate, IncidentCommentResponse
+    IncidentAlertsLink, IncidentEventsLink, IncidentCommentCreate, IncidentCommentResponse,
+    TimelineResponse, EntitiesResponse, IncidentEvidenceCreate, IncidentEvidenceResponse
 )
 from app.services.incident_service import IncidentService
 from app.services.incident_workflow_service import IncidentWorkflowService
@@ -242,3 +243,132 @@ def add_incident_comment(
     db.commit()
     db.refresh(comment)
     return comment
+
+@router.get("/{incident_id}/timeline", response_model=TimelineResponse)
+def get_incident_timeline(
+    incident_id: uuid.UUID,
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    types: Optional[str] = Query(None, description="Comma-separated list of types"),
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission(Permission.INCIDENTS_READ))
+):
+    incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+        
+    entry_types = types.split(",") if types else None
+    
+    from app.services.investigation_service import InvestigationService
+    items = InvestigationService.get_timeline(db, incident, limit, offset, entry_types, search)
+    
+    return {
+        "items": items,
+        "total": len(items) # Note: For pagination, real total might be more complex, returning loaded count
+    }
+
+@router.get("/{incident_id}/entities", response_model=EntitiesResponse)
+def get_incident_entities(
+    incident_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission(Permission.INCIDENTS_READ))
+):
+    incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+        
+    from app.services.investigation_service import InvestigationService
+    return InvestigationService.get_entities(db, incident)
+
+from app.schemas.security_event import EventResponse
+@router.get("/{incident_id}/related-events", response_model=List[EventResponse])
+def get_incident_related_events(
+    incident_id: uuid.UUID,
+    limit: int = Query(50, ge=1, le=200),
+    time_window: int = Query(30, description="Minutes around incident"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission(Permission.INCIDENTS_READ))
+):
+    incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+        
+    from app.services.investigation_service import InvestigationService
+    events = InvestigationService.get_related_events(db, incident, time_window, limit)
+    
+    # Map to EventResponse manually because schemas are slightly different
+    result = []
+    for ev in events:
+        result.append(EventResponse(
+            id=ev.id,
+            application_id=ev.application_id,
+            application_name=ev.application.name if ev.application else "",
+            event_type=ev.event_type,
+            severity=ev.severity,
+            timestamp=ev.timestamp,
+            source_ip=ev.source_ip,
+            user_id=ev.details.get("user_id") if ev.details else None,
+            username=ev.details.get("username") if ev.details else None,
+            session_id=ev.details.get("session_id") if ev.details else None,
+            request_id=ev.details.get("request_id") if ev.details else None,
+            http_method=ev.details.get("http_method") if ev.details else None,
+            request_path=ev.details.get("request_path") if ev.details else None,
+            user_agent=ev.details.get("user_agent") if ev.details else None,
+            message=ev.title or ev.description
+        ))
+    return result
+
+@router.post("/{incident_id}/evidence", response_model=IncidentEvidenceResponse)
+def pin_evidence(
+    incident_id: uuid.UUID,
+    evidence_in: IncidentEvidenceCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission(Permission.INCIDENTS_MANAGE))
+):
+    incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+        
+    from app.services.investigation_service import InvestigationService
+    from app.services.incident_workflow_service import IncidentWorkflowService
+    
+    evidence = InvestigationService.pin_evidence(
+        db, incident_id, evidence_in.evidence_type, evidence_in.evidence_id, current_user.id
+    )
+    
+    IncidentWorkflowService._log_audit(
+        db, current_user, "INCIDENT_EVIDENCE_PINNED", incident.id,
+        {"evidence_type": evidence_in.evidence_type, "evidence_id": str(evidence_in.evidence_id)}, request
+    )
+    
+    db.commit()
+    db.refresh(evidence)
+    return evidence
+
+@router.delete("/{incident_id}/evidence/{evidence_type}/{evidence_id}", status_code=204)
+def unpin_evidence(
+    incident_id: uuid.UUID,
+    evidence_type: str,
+    evidence_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission(Permission.INCIDENTS_MANAGE))
+):
+    incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+        
+    from app.services.investigation_service import InvestigationService
+    from app.services.incident_workflow_service import IncidentWorkflowService
+    
+    InvestigationService.unpin_evidence(db, incident_id, evidence_type, evidence_id)
+    
+    IncidentWorkflowService._log_audit(
+        db, current_user, "INCIDENT_EVIDENCE_UNPINNED", incident.id,
+        {"evidence_type": evidence_type, "evidence_id": str(evidence_id)}, request
+    )
+    
+    db.commit()
+    return None

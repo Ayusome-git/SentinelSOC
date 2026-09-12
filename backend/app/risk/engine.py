@@ -10,7 +10,8 @@ from app.risk.factors import (
     PrivilegeContextFactor,
     CorrelationStrengthFactor,
     ApplicationContextFactor,
-    RepeatedActivityFactor
+    RepeatedActivityFactor,
+    MLAnomalyFactor
 )
 
 class RiskScoreResult:
@@ -78,6 +79,11 @@ class RiskScoringEngine:
         repeated = RepeatedActivityFactor.calculate_for_alert(db, alert)
         factors["repeated_activity"] = repeated
         total_score += repeated
+
+        # 9. ML Anomaly 
+        ml_anomaly = MLAnomalyFactor.calculate_for_alert(alert)
+        factors["ml_anomaly_strength"] = ml_anomaly
+        total_score += ml_anomaly
         
         final_score = RiskScoringEngine._clamp_score(total_score)
         level = RiskScoringEngine.get_risk_level(final_score)
