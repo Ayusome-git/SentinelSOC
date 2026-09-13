@@ -9,6 +9,7 @@ from app.models.incident_comment import IncidentComment
 from app.models.user import User
 from app.services.audit_service import create_audit_log
 from app.core.permissions import has_permission, Permission
+from app.notifications.triggers import trigger_incident_assigned, trigger_incident_escalated
 
 class IncidentWorkflowService:
     @staticmethod
@@ -74,6 +75,10 @@ class IncidentWorkflowService:
                 "new_status": new_status.value
             }
         )
+        
+        # We also want to trigger INCIDENT_ESCALATED if it's escalated in severity (not status)
+        # But this function only changes status. If we change severity, it's done elsewhere.
+        
         return incident
 
     @staticmethod
@@ -108,6 +113,10 @@ class IncidentWorkflowService:
                 "new_assignee": str(assignee_id) if assignee_id else None
             }
         )
+        
+        if assignee_id:
+            trigger_incident_assigned(db, incident, assignee_id)
+            
         return incident
 
     @staticmethod

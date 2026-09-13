@@ -91,6 +91,9 @@ def _build_filter_query(
 ):
     if is_analytics:
         query = db.query(SecurityEvent)
+    if current_user:
+        from app.api import deps
+        query = deps.filter_query_by_app_access(query, SecurityEvent, current_user)
     else:
         query = db.query(SecurityEvent, Application.name.label("application_name")).join(
             Application, SecurityEvent.application_id == Application.id
@@ -134,6 +137,7 @@ def _build_filter_query(
 
 def list_events(
     db: Session,
+    current_user=None,
     page: int = 1,
     page_size: int = 50,
     application_id: Optional[UUID] = None,
@@ -186,6 +190,7 @@ def list_events(
 
 def get_event_analytics(
     db: Session,
+    current_user=None,
     application_id: Optional[UUID] = None,
     event_types: Optional[List[str]] = None,
     severities: Optional[List[str]] = None,

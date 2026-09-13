@@ -234,3 +234,29 @@ class MLAnomalyFactor:
             # Let's give a strong base risk factor for ML anomalies.
             return 20
         return 0
+
+class ThreatIntelFactor:
+    """
+    Adjusts risk based on Threat Intelligence findings associated with the alert.
+    """
+    @staticmethod
+    def calculate_for_alert(db: Session, alert: Alert) -> int:
+        score = 0
+        
+        # Threat intel findings are associated through AlertThreatIntel
+        if not alert.threat_intel_indicators:
+            return 0
+            
+        for ati in alert.threat_intel_indicators:
+            ti = ati.threat_intel_indicator
+            if ti.malicious:
+                if ti.confidence >= 90:
+                    score = max(score, 20)
+                elif ti.confidence >= 70:
+                    score = max(score, 15)
+                else:
+                    score = max(score, 10)
+            elif ti.reputation in ("suspicious", "poor"):
+                score = max(score, 8)
+                
+        return score

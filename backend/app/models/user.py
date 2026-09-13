@@ -25,4 +25,5 @@ class User(BaseModel):
     applications: Mapped[List["Application"]] = relationship("Application", back_populates="owner", cascade="all, delete-orphan")
     assigned_alerts: Mapped[List["Alert"]] = relationship("Alert", back_populates="assignee")
     assigned_incidents: Mapped[List["Incident"]] = relationship("Incident", back_populates="assignee")
-    audit_logs: Mapped[List["AuditLog"]] = relationship("AuditLog", back_populates="user")
+    audit_logs: Mapped[List["AuditLog"]] = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")
+    notification_preferences: Mapped[List["NotificationPreference"]] = relationship("NotificationPreference", back_populates="user", cascade="all, delete-orphan")

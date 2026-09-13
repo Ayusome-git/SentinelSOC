@@ -24,7 +24,7 @@ def get_alert_summary(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.require_permission(Permission.ALERTS_READ)),
 ):
-    query = db.query(Alert)
+    query = deps.filter_query_by_app_access(db.query(Alert), Alert, current_user)
     total = query.count()
     
     status_counts = db.query(Alert.status, func.count(Alert.id)).group_by(Alert.status).all()
@@ -67,10 +67,10 @@ def list_alerts(
     start_time: Optional[datetime] = None,
     end_time: Optional[datetime] = None,
     search: Optional[str] = None,
-    sort_by: str = Query("detected_at", regex="^(detected_at|risk_score|severity)$"),
-    sort_dir: str = Query("desc", regex="^(asc|desc)$")
+    sort_by: str = Query("detected_at", pattern="^(detected_at|risk_score|severity)$"),
+    sort_dir: str = Query("desc", pattern="^(asc|desc)$")
 ):
-    query = db.query(Alert)
+    query = deps.filter_query_by_app_access(db.query(Alert), Alert, current_user)
     
     if status:
         query = query.filter(Alert.status == status)
@@ -164,6 +164,8 @@ def get_alert(
     current_user: User = Depends(deps.require_permission(Permission.ALERTS_READ)),
 ):
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
+    if alert:
+        deps.check_app_access(current_user, alert.application_id)
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
         
@@ -177,6 +179,8 @@ def acknowledge_alert(
     current_user: User = Depends(deps.require_permission(Permission.ALERTS_MANAGE)),
 ):
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
+    if alert:
+        deps.check_app_access(current_user, alert.application_id)
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
         
@@ -192,6 +196,8 @@ def resolve_alert(
     current_user: User = Depends(deps.require_permission(Permission.ALERTS_MANAGE)),
 ):
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
+    if alert:
+        deps.check_app_access(current_user, alert.application_id)
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
         
@@ -207,6 +213,8 @@ def false_positive_alert(
     current_user: User = Depends(deps.require_permission(Permission.ALERTS_MANAGE)),
 ):
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
+    if alert:
+        deps.check_app_access(current_user, alert.application_id)
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
         
@@ -223,6 +231,8 @@ def assign_alert(
     current_user: User = Depends(deps.require_permission(Permission.ALERTS_MANAGE)),
 ):
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
+    if alert:
+        deps.check_app_access(current_user, alert.application_id)
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
         
@@ -237,6 +247,8 @@ def get_alert_comments(
     current_user: User = Depends(deps.require_permission(Permission.ALERTS_READ)),
 ):
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
+    if alert:
+        deps.check_app_access(current_user, alert.application_id)
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
         
@@ -251,6 +263,8 @@ def add_alert_comment(
     current_user: User = Depends(deps.require_permission(Permission.ALERTS_MANAGE)),
 ):
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
+    if alert:
+        deps.check_app_access(current_user, alert.application_id)
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
         
@@ -266,6 +280,8 @@ def get_alert_risk(
     current_user: User = Depends(deps.require_permission(Permission.ALERTS_READ)),
 ):
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
+    if alert:
+        deps.check_app_access(current_user, alert.application_id)
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
         
@@ -285,6 +301,8 @@ def create_incident_from_alert(
 ):
     from app.services.incident_service import IncidentService
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
+    if alert:
+        deps.check_app_access(current_user, alert.application_id)
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
         

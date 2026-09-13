@@ -18,6 +18,7 @@ from app.schemas.incident import (
 )
 from app.services.incident_service import IncidentService
 from app.services.incident_workflow_service import IncidentWorkflowService
+from app.notifications.triggers import trigger_incident_escalated
 
 router = APIRouter()
 
@@ -26,7 +27,7 @@ def get_incident_summary(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission(Permission.INCIDENTS_READ))
 ):
-    query = db.query(Incident)
+    query = deps.filter_query_by_app_access(db.query(Incident), Incident, current_user)
     
     total = query.count()
     status_counts = db.query(Incident.status, func.count(Incident.id)).group_by(Incident.status).all()
@@ -71,7 +72,7 @@ def list_incidents(
     assigned_to: Optional[uuid.UUID] = None,
     search: Optional[str] = None
 ):
-    query = db.query(Incident)
+    query = deps.filter_query_by_app_access(db.query(Incident), Incident, current_user)
     
     if status:
         query = query.filter(Incident.status == status)
@@ -125,6 +126,8 @@ def get_incident(
     current_user: User = Depends(require_permission(Permission.INCIDENTS_READ))
 ):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if incident:
+        deps.check_app_access(current_user, incident.application_id)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
     return incident
@@ -137,8 +140,12 @@ def update_incident(
     current_user: User = Depends(require_permission(Permission.INCIDENTS_MANAGE))
 ):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if incident:
+        deps.check_app_access(current_user, incident.application_id)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
+        
+    old_severity = incident.severity
         
     if incident_in.title is not None:
         incident.title = incident_in.title
@@ -149,6 +156,13 @@ def update_incident(
         
     db.commit()
     db.refresh(incident)
+    
+    # Trigger escalation if severity changed
+    if incident_in.severity is not None and incident_in.severity != old_severity:
+        # Check if it was actually an escalation (e.g. going up in severity). For simplicity, any change could be a trigger,
+        # but let's just trigger it.
+        trigger_incident_escalated(db, incident)
+        
     return incident
 
 @router.patch("/{incident_id}/status", response_model=IncidentResponse)
@@ -160,6 +174,8 @@ def update_incident_status(
     current_user: User = Depends(require_permission(Permission.INCIDENTS_MANAGE))
 ):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if incident:
+        deps.check_app_access(current_user, incident.application_id)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
         
@@ -177,6 +193,8 @@ def assign_incident(
     current_user: User = Depends(require_permission(Permission.INCIDENTS_MANAGE))
 ):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if incident:
+        deps.check_app_access(current_user, incident.application_id)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
         
@@ -194,6 +212,8 @@ def add_alerts_to_incident(
     current_user: User = Depends(require_permission(Permission.INCIDENTS_MANAGE))
 ):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if incident:
+        deps.check_app_access(current_user, incident.application_id)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
         
@@ -209,6 +229,8 @@ def add_events_to_incident(
     current_user: User = Depends(require_permission(Permission.INCIDENTS_MANAGE))
 ):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if incident:
+        deps.check_app_access(current_user, incident.application_id)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
         
@@ -222,6 +244,8 @@ def get_incident_comments(
     current_user: User = Depends(require_permission(Permission.INCIDENTS_READ))
 ):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if incident:
+        deps.check_app_access(current_user, incident.application_id)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
         
@@ -236,6 +260,8 @@ def add_incident_comment(
     current_user: User = Depends(require_permission(Permission.INCIDENTS_MANAGE))
 ):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if incident:
+        deps.check_app_access(current_user, incident.application_id)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
         
@@ -255,6 +281,8 @@ def get_incident_timeline(
     current_user: User = Depends(require_permission(Permission.INCIDENTS_READ))
 ):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if incident:
+        deps.check_app_access(current_user, incident.application_id)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
         
@@ -275,6 +303,8 @@ def get_incident_entities(
     current_user: User = Depends(require_permission(Permission.INCIDENTS_READ))
 ):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if incident:
+        deps.check_app_access(current_user, incident.application_id)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
         
@@ -291,6 +321,8 @@ def get_incident_related_events(
     current_user: User = Depends(require_permission(Permission.INCIDENTS_READ))
 ):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if incident:
+        deps.check_app_access(current_user, incident.application_id)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
         
@@ -328,6 +360,8 @@ def pin_evidence(
     current_user: User = Depends(require_permission(Permission.INCIDENTS_MANAGE))
 ):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if incident:
+        deps.check_app_access(current_user, incident.application_id)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
         
@@ -357,6 +391,8 @@ def unpin_evidence(
     current_user: User = Depends(require_permission(Permission.INCIDENTS_MANAGE))
 ):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if incident:
+        deps.check_app_access(current_user, incident.application_id)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
         

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.alert import Alert
 from app.models.correlation import Correlation
 from app.risk.engine import RiskScoringEngine
+from app.notifications.triggers import trigger_alert_notification
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,8 @@ class RiskScoringService:
             alert.risk_factors = result.factors
             
             db.commit()
+            
+            trigger_alert_notification(db, alert)
         except Exception as e:
             logger.error(f"Error recalculating risk for alert {alert_id}: {str(e)}")
             db.rollback()
@@ -49,6 +52,9 @@ class RiskScoringService:
                 correlation.alert.risk_factors = result.factors
             
             db.commit()
+            
+            if correlation.alert:
+                trigger_alert_notification(db, correlation.alert)
         except Exception as e:
             logger.error(f"Error recalculating risk for correlation {correlation_id}: {str(e)}")
             db.rollback()

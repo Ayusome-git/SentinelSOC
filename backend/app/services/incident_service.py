@@ -11,6 +11,7 @@ from app.models.correlation import Correlation
 from app.models.user import User
 from app.services.audit_service import create_audit_log
 from app.services.incident_sequence_service import IncidentSequenceService
+from app.notifications.triggers import trigger_incident_created
 
 class IncidentService:
     @staticmethod
@@ -94,6 +95,8 @@ class IncidentService:
             details={"incident_number": incident.incident_number, "manual": True}
         )
         
+        trigger_incident_created(db, incident)
+        
         return incident
 
     @staticmethod
@@ -127,6 +130,8 @@ class IncidentService:
             request=request,
             details={"incident_number": incident.incident_number, "alert_id": str(alert.id)}
         )
+        
+        trigger_incident_created(db, incident)
         
         return incident
 
@@ -177,6 +182,8 @@ class IncidentService:
             request=request,
             details={"incident_number": incident.incident_number, "correlation_id": str(correlation.id)}
         )
+        
+        trigger_incident_created(db, incident)
         
         return incident
 

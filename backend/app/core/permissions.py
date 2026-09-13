@@ -49,6 +49,20 @@ class Permission(str, enum.Enum):
     ML_READ = "ML_READ"
     ML_MANAGE = "ML_MANAGE"
 
+    # Threat Intelligence
+    THREAT_INTEL_READ = "THREAT_INTEL_READ"
+    THREAT_INTEL_MANAGE = "THREAT_INTEL_MANAGE"
+
+    # Automated Response & Actions
+    RESPONSE_READ = "RESPONSE_READ"
+    RESPONSE_REQUEST = "RESPONSE_REQUEST"
+    RESPONSE_APPROVE = "RESPONSE_APPROVE"
+    RESPONSE_MANAGE = "RESPONSE_MANAGE"
+
+    # Notifications
+    NOTIFICATIONS_READ = "NOTIFICATIONS_READ"
+    NOTIFICATIONS_MANAGE = "NOTIFICATIONS_MANAGE"
+
 
 # Centralized role → permissions mapping.
 # This is the authoritative matrix — extend it as new permissions are added.
@@ -71,6 +85,14 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
         Permission.CORRELATIONS_MANAGE,
         Permission.ML_READ,
         Permission.ML_MANAGE,
+        Permission.THREAT_INTEL_READ,
+        Permission.THREAT_INTEL_MANAGE,
+        Permission.RESPONSE_READ,
+        Permission.RESPONSE_REQUEST,
+        Permission.RESPONSE_APPROVE,
+        Permission.RESPONSE_MANAGE,
+        Permission.NOTIFICATIONS_READ,
+        Permission.NOTIFICATIONS_MANAGE,
     },
     UserRole.ANALYST: {
         Permission.APPLICATIONS_READ,
@@ -84,6 +106,12 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
         Permission.CORRELATIONS_READ,
         Permission.CORRELATIONS_MANAGE,
         Permission.ML_READ,
+        Permission.THREAT_INTEL_READ,
+        Permission.THREAT_INTEL_MANAGE,
+        Permission.RESPONSE_READ,
+        Permission.RESPONSE_REQUEST,
+        Permission.NOTIFICATIONS_READ,
+        Permission.NOTIFICATIONS_MANAGE,
     },
     UserRole.VIEWER: {
         Permission.APPLICATIONS_READ,
@@ -92,6 +120,8 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
         Permission.INCIDENTS_READ,
         Permission.SETTINGS_READ,
         Permission.CORRELATIONS_READ,
+        Permission.RESPONSE_READ,
+        Permission.NOTIFICATIONS_READ,
     },
 }
 

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, IPvAnyAddress, ConfigDict
+from pydantic import BaseModel, Field, IPvAnyAddress, ConfigDict, field_validator
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from uuid import UUID
@@ -36,6 +36,35 @@ class EventCreate(BaseModel):
     request_path: Optional[str] = Field(None, max_length=1000)
     user_agent: Optional[str] = Field(None, max_length=1000)
     metadata_: Optional[Dict[str, Any]] = Field(None, alias="metadata")
+
+
+    @classmethod
+    def _validate_metadata_depth_and_size(cls, meta: Any, current_depth: int = 1) -> None:
+        if current_depth > 5:
+            raise ValueError('Metadata exceeds maximum depth of 5')
+        
+        if isinstance(meta, dict):
+            if len(meta) > 50:
+                raise ValueError('Metadata exceeds maximum 50 keys per object')
+            for k, v in meta.items():
+                if len(str(k)) > 255:
+                    raise ValueError('Metadata key too long')
+                cls._validate_metadata_depth_and_size(v, current_depth + 1)
+        elif isinstance(meta, list):
+            if len(meta) > 100:
+                raise ValueError('Metadata list too long')
+            for item in meta:
+                cls._validate_metadata_depth_and_size(item, current_depth + 1)
+        elif isinstance(meta, str):
+            if len(meta) > 4096:
+                raise ValueError('Metadata string value exceeds 4096 characters')
+
+    @field_validator('metadata_')
+    @classmethod
+    def validate_metadata(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        if v:
+            cls._validate_metadata_depth_and_size(v)
+        return v
 
     model_config = ConfigDict(populate_by_name=True)
 

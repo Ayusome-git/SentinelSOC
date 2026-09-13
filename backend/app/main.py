@@ -1,7 +1,25 @@
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.v1.endpoints import health, auth, users, applications, events
+from app.api.v1.endpoints import (
+    health,
+    auth,
+    users,
+    applications,
+    events,
+    dashboard,
+    rules,
+    correlations,
+    alerts,
+    incidents,
+    ml,
+    threat_intel,
+    response_actions,
+    response_capabilities,
+    response_policies,
+    notifications,
+    reports,
+)
 
 app = FastAPI(
     title="SentinelSOC API",
@@ -19,6 +37,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:*;"
     # Enable HSTS only in production (don't break local HTTP development)
     if settings.ENVIRONMENT == "production":
         response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
@@ -58,6 +77,13 @@ from app.api.v1.endpoints import incidents
 app.include_router(incidents.router, prefix="/api/v1/incidents", tags=["incidents"])
 from app.api.v1.endpoints import ml
 app.include_router(ml.router, prefix="/api/v1/ml", tags=["ml"])
+from app.api.v1.endpoints import threat_intel
+app.include_router(threat_intel.router, prefix="/api/v1/threat-intelligence", tags=["threat_intelligence"])
+app.include_router(response_actions.router, prefix="/api/v1/response-actions", tags=["response_actions"])
+app.include_router(response_capabilities.router, prefix="/api/v1/response-capabilities", tags=["response_capabilities"])
+app.include_router(response_policies.router, prefix="/api/v1/response-policies", tags=["response_policies"])
+app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
+app.include_router(reports.router, prefix="/api/v1/reports", tags=["reports"])
 
 @app.get("/")
 def root():

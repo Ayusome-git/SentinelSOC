@@ -11,6 +11,7 @@ from app.models.ml_model import MLModel, MLModelStatus
 from app.models.alert import Alert, AlertStatus, DetectionSource
 from app.services.ml_feature_service import FeatureExtractionService
 from app.risk.service import RiskScoringService
+from app.notifications.triggers import trigger_ml_anomaly
 
 class MLDetectionResult:
     def __init__(self, is_anomaly: bool, anomaly_score: int, model_id: str, feature_version: str, feature_values: Dict[str, float], explanation: str):
@@ -184,3 +185,4 @@ class MLAnomalyDetectionService:
         
         # 6. Risk Scoring Integration
         RiskScoringService.recalculate_alert(db, alert.id)
+        trigger_ml_anomaly(db, alert)

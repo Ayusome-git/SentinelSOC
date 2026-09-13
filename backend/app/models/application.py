@@ -34,3 +34,5 @@ class Application(BaseModel):
     correlations: Mapped[List["Correlation"]] = relationship("Correlation", back_populates="application", cascade="all, delete-orphan")
     ml_models: Mapped[List["MLModel"]] = relationship("MLModel", back_populates="application", cascade="all, delete-orphan")
     incidents: Mapped[List["Incident"]] = relationship("Incident", back_populates="application")
+    response_capabilities: Mapped[List["ApplicationResponseCapability"]] = relationship("ApplicationResponseCapability", back_populates="application", cascade="all, delete-orphan")
+    response_actions: Mapped[List["ResponseAction"]] = relationship("ResponseAction", back_populates="application", cascade="all, delete-orphan")

@@ -33,7 +33,7 @@ def list_correlations(
     """
     List correlations with optional filtering.
     """
-    query = db.query(Correlation)
+    query = deps.filter_query_by_app_access(db.query(Correlation), Correlation, current_user)
     
     if status:
         query = query.filter(Correlation.status == status)
@@ -74,6 +74,8 @@ def get_correlation(
     Get a specific correlation and its evidence timeline.
     """
     correlation = db.query(Correlation).filter(Correlation.id == correlation_id).first()
+    if correlation:
+        deps.check_app_access(current_user, correlation.application_id)
     if not correlation:
         raise HTTPException(status_code=404, detail="Correlation not found")
         
@@ -136,6 +138,8 @@ def update_correlation_status(
     Update the status of a correlation.
     """
     correlation = db.query(Correlation).filter(Correlation.id == correlation_id).first()
+    if correlation:
+        deps.check_app_access(current_user, correlation.application_id)
     if not correlation:
         raise HTTPException(status_code=404, detail="Correlation not found")
         
@@ -154,6 +158,8 @@ def create_incident_from_correlation(
 ):
     from app.services.incident_service import IncidentService
     correlation = db.query(Correlation).filter(Correlation.id == correlation_id).first()
+    if correlation:
+        deps.check_app_access(current_user, correlation.application_id)
     if not correlation:
         raise HTTPException(status_code=404, detail="Correlation not found")
         

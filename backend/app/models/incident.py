@@ -40,3 +40,4 @@ class Incident(BaseModel):
     events: Mapped[List["SecurityEvent"]] = relationship("SecurityEvent", secondary="incident_events", back_populates="incidents")
     comments: Mapped[List["IncidentComment"]] = relationship("IncidentComment", back_populates="incident", cascade="all, delete-orphan", order_by="asc(IncidentComment.created_at)")
     evidence: Mapped[List["IncidentEvidence"]] = relationship("IncidentEvidence", back_populates="incident", cascade="all, delete-orphan", order_by="asc(IncidentEvidence.created_at)")
+    response_actions: Mapped[List["ResponseAction"]] = relationship("ResponseAction", back_populates="incident", cascade="all, delete-orphan")

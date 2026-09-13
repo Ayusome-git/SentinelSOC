@@ -11,7 +11,8 @@ from app.risk.factors import (
     CorrelationStrengthFactor,
     ApplicationContextFactor,
     RepeatedActivityFactor,
-    MLAnomalyFactor
+    MLAnomalyFactor,
+    ThreatIntelFactor
 )
 
 class RiskScoreResult:
@@ -85,6 +86,11 @@ class RiskScoringEngine:
         factors["ml_anomaly_strength"] = ml_anomaly
         total_score += ml_anomaly
         
+        # 10. Threat Intelligence
+        threat_intel = ThreatIntelFactor.calculate_for_alert(db, alert)
+        factors["threat_intel"] = threat_intel
+        total_score += threat_intel
+
         final_score = RiskScoringEngine._clamp_score(total_score)
         level = RiskScoringEngine.get_risk_level(final_score)
         
@@ -134,6 +140,10 @@ class RiskScoringEngine:
         repeated = RepeatedActivityFactor.calculate_for_correlation(db, correlation)
         factors["repeated_activity"] = repeated
         total_score += repeated
+        
+        # Note: ML Anomaly could be added here if correlations supported it.
+        # Threat intel could also be added to correlations if needed, but for now we score at alert level
+        # and sum up via BaseSeverityFactor or directly.
         
         final_score = RiskScoringEngine._clamp_score(total_score)
         level = RiskScoringEngine.get_risk_level(final_score)

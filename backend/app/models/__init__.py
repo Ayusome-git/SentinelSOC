@@ -9,6 +9,9 @@ from app.models.incident import Incident, IncidentStatus
 from app.models.incident_comment import IncidentComment
 from app.models.incident_evidence import IncidentEvidence, EvidenceType
 from app.models.ml_model import MLModel, MLModelStatus
+from app.models.threat_intel import ThreatIntelCache, ThreatIntelIndicator, AlertThreatIntel
+from app.models.response import ResponseAction, ResponsePolicy, ApplicationResponseCapability, ResponseActionStatus
+from app.models.notification import Notification, NotificationPreference, NotificationType, NotificationChannel, NotificationStatus
 from app.models.incident_sequence import IncidentSequence
 from app.models.audit_log import AuditLog
 from app.models.detection_rule import DetectionRule

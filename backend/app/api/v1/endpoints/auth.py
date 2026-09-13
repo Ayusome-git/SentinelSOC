@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from app.api import deps
+from app.core.rate_limit import check_rate_limit
 from app.core.security import verify_password, create_access_token
 from app.models.user import User
 from app.models.audit_log import AuditLog
@@ -11,7 +12,7 @@ from app.schemas.user import UserResponse
 
 router = APIRouter()
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=TokenResponse, dependencies=[Depends(check_rate_limit)])
 def login_access_token(
     request: Request,
     login_data: LoginRequest,

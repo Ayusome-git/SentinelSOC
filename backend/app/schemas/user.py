@@ -15,6 +15,13 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        if len(v) < 12:
+            raise ValueError("Password must be at least 12 characters long")
+        return v
+
 
 class UserCreateByAdmin(BaseModel):
     """Schema for admin-created users with password validation."""
@@ -26,8 +33,8 @@ class UserCreateByAdmin(BaseModel):
     @field_validator("password")
     @classmethod
     def validate_password_strength(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters long")
+        if len(v) < 12:
+            raise ValueError("Password must be at least 12 characters long")
         return v
 
     @field_validator("full_name")
