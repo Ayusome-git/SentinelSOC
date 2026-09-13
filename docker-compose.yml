@@ -3,58 +3,72 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: sentinelsoc-postgres
-    restart: always
+    container_name: sentinelsoc_postgres_dev
     environment:
-      POSTGRES_USER: sentinelsoc
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: sentinelsoc
+      POSTGRES_USER: ${POSTGRES_USER:-sentinelsoc}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-socpassword}
+      POSTGRES_DB: ${POSTGRES_DB:-sentinelsoc}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sentinelsoc -d sentinelsoc"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sentinelsoc} -d ${POSTGRES_DB:-sentinelsoc}"]
+      interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - sentinelsoc_network
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: sentinelsoc-backend
-    restart: always
+    container_name: sentinelsoc_backend_dev
     environment:
-      - DATABASE_URL=postgresql://sentinelsoc:password@postgres:5432/sentinelsoc
-      - SECRET_KEY=development_secret_key_change_in_production
       - ENVIRONMENT=development
-      - API_HOST=0.0.0.0
-      - API_PORT=8000
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-sentinelsoc}:${POSTGRES_PASSWORD:-socpassword}@postgres:5432/${POSTGRES_DB:-sentinelsoc}
+      - SECRET_KEY=${SECRET_KEY:-development_secret_key_placeholder}
+      - ML_MODEL_DIRECTORY=/app/ml_models
+      # Forward any existing environment variables
+      - BACKEND_CORS_ORIGINS
+      - TI_PROVIDER
+      - TI_API_KEY
+      - SMTP_USERNAME
+      - SMTP_PASSWORD
     ports:
       - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ml_models_data:/app/ml_models
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
+    networks:
+      - sentinelsoc_network
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: sentinelsoc-frontend
-    restart: always
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
-    ports:
-      - "3000:3000"
+    image: node:20-alpine
+    container_name: sentinelsoc_frontend_dev
+    working_dir: /app
     volumes:
       - ./frontend:/app
       - /app/node_modules
-      - /app/.next
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
+    command: npm run dev
+    networks:
+      - sentinelsoc_network
     depends_on:
       - backend
 
+networks:
+  sentinelsoc_network:
+    driver: bridge
+
 volumes:
   postgres_data:
+  ml_models_data:

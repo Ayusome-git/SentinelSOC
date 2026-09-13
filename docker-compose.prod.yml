@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: sentinelsoc_postgres_prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sentinelsoc_network_prod
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sentinelsoc_backend_prod
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - SECRET_KEY=${SECRET_KEY}
+      - ML_MODEL_DIRECTORY=/app/ml_models
+      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
+      - TI_PROVIDER=${TI_PROVIDER}
+      - TI_API_KEY=${TI_API_KEY}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - EMAIL_ENABLED=${EMAIL_ENABLED}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_FROM=${SMTP_FROM}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USE_TLS=${SMTP_USE_TLS}
+      - AUTO_RESPONSE_ENABLED=${AUTO_RESPONSE_ENABLED:-False}
+    volumes:
+      - ml_models_data_prod:/app/ml_models
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sentinelsoc_network_prod
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sentinelsoc_frontend_prod
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    depends_on:
+      - backend
+    networks:
+      - sentinelsoc_network_prod
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: sentinelsoc_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      # For HTTPS, mount your certificates here:
+      # - /path/to/certs/fullchain.pem:/etc/nginx/certs/fullchain.pem:ro
+      # - /path/to/certs/privkey.pem:/etc/nginx/certs/privkey.pem:ro
+    depends_on:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - sentinelsoc_network_prod
+
+networks:
+  sentinelsoc_network_prod:
+    driver: bridge
+
+volumes:
+  postgres_data_prod:
+  ml_models_data_prod:
