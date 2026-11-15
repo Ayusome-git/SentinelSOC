@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MANIT Marketplace - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .toast {
+            transition: all 0.3s ease;
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 min-h-screen text-slate-200 flex items-center justify-center p-4 relative overflow-hidden">
+    
+    <!-- Abstract background -->
+    <div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/20 blur-[120px]"></div>
+    <div class="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-600/20 blur-[120px]"></div>
+
+    <!-- Main Container -->
+    <div class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8 z-10 relative">
+        
+        <!-- Marketplace Login UI -->
+        <div class="glass-panel rounded-2xl p-8 shadow-2xl flex flex-col justify-center max-w-md mx-auto w-full border border-slate-700/50 bg-slate-800/50">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-blue-500 rounded-xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-blue-500/30">
+                    <i class="fas fa-shopping-cart text-2xl text-white"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-white mb-2">MANIT Marketplace</h1>
+                <p class="text-slate-400 text-sm">Log in to manage your listings and purchases</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Email / Username</label>
+                    <input type="text" id="username" class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" placeholder="student@manit.ac.in" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Password</label>
+                    <input type="password" id="password" class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" placeholder="••••••••" required>
+                </div>
+                
+                <div class="flex items-center justify-between text-sm">
+                    <label class="flex items-center text-slate-400">
+                        <input type="checkbox" class="mr-2 rounded border-slate-700 bg-slate-900/50 text-blue-500 focus:ring-blue-500"> Remember me
+                    </label>
+                    <a href="#" class="text-blue-400 hover:text-blue-300 transition-colors">Forgot password?</a>
+                </div>
+                
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors shadow-lg shadow-blue-600/20 mt-4">
+                    Sign In
+                </button>
+                <div class="text-center text-sm text-slate-400 mt-4">
+                    Hint: Use 'admin' / 'admin123' for success.
+                </div>
+            </form>
+        </div>
+
+        <!-- Security Demo / SOC Integration Panel -->
+        <div class="glass-panel rounded-2xl p-8 shadow-2xl flex flex-col border border-indigo-500/30 bg-indigo-900/20">
+            <div class="flex items-center mb-6 border-b border-indigo-500/20 pb-4">
+                <i class="fas fa-shield-alt text-2xl text-indigo-400 mr-3"></i>
+                <div>
+                    <h2 class="text-xl font-bold text-white">Security Telemetry Demo</h2>
+                    <p class="text-indigo-300 text-sm">Simulate attacks and generate SOC events</p>
+                </div>
+            </div>
+            
+            <div class="space-y-3 flex-grow overflow-y-auto pr-2 max-h-[420px]">
+                
+                <!-- Simulation Buttons -->
+                <button onclick="simulateBruteForce()" class="w-full bg-slate-800 hover:bg-slate-700 border border-red-500/50 text-slate-200 py-3 px-4 rounded-xl flex items-center justify-between group transition-all">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-bomb"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-medium">Brute Force Attack</div>
+                            <div class="text-xs text-slate-400">Sends 20 LOGIN_FAILED for 'admin' (Triggers Threshold Rule)</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-slate-500 group-hover:text-red-400 transition-colors"></i>
+                </button>
+
+                <button onclick="simulateCredentialStuffing()" class="w-full bg-slate-800 hover:bg-slate-700 border border-purple-500/50 text-slate-200 py-3 px-4 rounded-xl flex items-center justify-between group transition-all">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-users-slash"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-medium">Credential Stuffing</div>
+                            <div class="text-xs text-slate-400">LOGIN_FAILED across 10 different usernames</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-slate-500 group-hover:text-purple-400 transition-colors"></i>
+                </button>
+
+                <button onclick="simulateSQLInjection()" class="w-full bg-slate-800 hover:bg-slate-700 border border-orange-500/50 text-slate-200 py-3 px-4 rounded-xl flex items-center justify-between group transition-all">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-medium">SQL Injection</div>
+                            <div class="text-xs text-slate-400">API_REQUEST with "' OR '1'='1" (Triggers Pattern Rule)</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-slate-500 group-hover:text-orange-400 transition-colors"></i>
+                </button>
+
+                <button onclick="simulatePathTraversal()" class="w-full bg-slate-800 hover:bg-slate-700 border border-teal-500/50 text-slate-200 py-3 px-4 rounded-xl flex items-center justify-between group transition-all">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-folder-open"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-medium">Path Traversal</div>
+                            <div class="text-xs text-slate-400">API_REQUEST reading ../../etc/passwd</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-slate-500 group-hover:text-teal-400 transition-colors"></i>
+                </button>
+
+                <button onclick="simulateIDOR()" class="w-full bg-slate-800 hover:bg-slate-700 border border-yellow-500/50 text-slate-200 py-3 px-4 rounded-xl flex items-center justify-between group transition-all">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-400 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-user-secret"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-medium">Repeated Auth Failures</div>
+                            <div class="text-xs text-slate-400">Sends 6 PERMISSION_DENIED (Triggers Threshold Rule)</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-slate-500 group-hover:text-yellow-400 transition-colors"></i>
+                </button>
+
+                <button onclick="simulatePasswordSpray()" class="w-full bg-slate-800 hover:bg-slate-700 border border-pink-500/50 text-slate-200 py-3 px-4 rounded-xl flex items-center justify-between group transition-all">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-spray-can"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-medium">Password Spray</div>
+                            <div class="text-xs text-slate-400">LOGIN_FAILED across different source IPs</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-slate-500 group-hover:text-pink-400 transition-colors"></i>
+                </button>
+
+                <button onclick="simulatePrivilegeEscalation()" class="w-full bg-slate-800 hover:bg-slate-700 border border-cyan-500/50 text-slate-200 py-3 px-4 rounded-xl flex items-center justify-between group transition-all">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-user-astronaut"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-medium">Privilege Escalation</div>
+                            <div class="text-xs text-slate-400">PERMISSION_DENIED followed by ADMIN_ACTION (Sequence Rule)</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-slate-500 group-hover:text-cyan-400 transition-colors"></i>
+                </button>
+
+                <button onclick="simulateXSS()" class="w-full bg-slate-800 hover:bg-slate-700 border border-lime-500/50 text-slate-200 py-3 px-4 rounded-xl flex items-center justify-between group transition-all">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-lime-500/20 text-lime-400 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-medium">XSS Attack</div>
+                            <div class="text-xs text-slate-400">API_REQUEST with Cross-Site Scripting tags</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-slate-500 group-hover:text-lime-400 transition-colors"></i>
+                </button>
+
+                <button onclick="simulateAPIDDoS()" class="w-full bg-slate-800 hover:bg-slate-700 border border-blue-500/50 text-slate-200 py-3 px-4 rounded-xl flex items-center justify-between group transition-all">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-medium">API Abuse (DDoS)</div>
+                            <div class="text-xs text-slate-400">Sends 110 API_REQUESTs instantly (Threshold Rule)</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-slate-500 group-hover:text-blue-400 transition-colors"></i>
+                </button>
+
+            </div>
+            
+            <div class="mt-6 bg-slate-900/80 rounded-lg p-4 font-mono text-xs text-green-400 h-32 overflow-y-auto" id="terminalLog">
+                > Initializing MANIT Marketplace Demo...
+                > Connected to SentinelSOC middleware...
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast fixed bottom-4 right-4 bg-slate-800 border border-slate-600 text-white px-6 py-3 rounded-lg shadow-xl z-50 flex items-center">
+        <i id="toastIcon" class="fas fa-info-circle mr-3"></i>
+        <span id="toastMessage">Notification message here</span>
+    </div>
+
+    <script>
+        // -- Telemetry Service --
+        async function sendTelemetry(eventData) {
+            try {
+                const response = await fetch('/api/telemetry', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(eventData)
+                });
+                const resData = await response.json();
+                
+                logToTerminal(`[SENT] ${eventData.event_type} - ${eventData.severity}`);
+                if (resData.status === 'ignored') {
+                    logToTerminal(`[WARN] Event ignored: ${resData.reason}`);
+                }
+                
+                return resData;
+            } catch (error) {
+                logToTerminal(`[ERROR] Failed to send telemetry: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        // -- UI Helpers --
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+            
+            toastMsg.textContent = message;
+            
+            toast.className = 'toast fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-xl z-50 flex items-center show';
+            toastIcon.className = 'mr-3 fas';
+            
+            if (type === 'success') {
+                toast.classList.add('bg-green-900', 'border-green-600');
+                toastIcon.classList.add('fa-check-circle', 'text-green-400');
+            } else if (type === 'error') {
+                toast.classList.add('bg-red-900', 'border-red-600');
+                toastIcon.classList.add('fa-exclamation-circle', 'text-red-400');
+            } else {
+                toast.classList.add('bg-blue-900', 'border-blue-600');
+                toastIcon.classList.add('fa-info-circle', 'text-blue-400');
+            }
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function logToTerminal(msg) {
+            const term = document.getElementById('terminalLog');
+            const time = new Date().toLocaleTimeString();
+            term.innerHTML += `<br><span class="text-slate-500">[${time}]</span> ${msg}`;
+            term.scrollTop = term.scrollHeight;
+        }
+
+        // -- Logic --
+        
+        // 1. Standard Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            
+            if (user === 'admin' && pass === 'admin123') {
+                showToast('Login successful!', 'success');
+                await sendTelemetry({
+                    event_type: 'LOGIN_SUCCESS',
+                    severity: 'INFO',
+                    message: 'User logged in successfully',
+                    username: user,
+                    request_path: '/api/login',
+                    http_method: 'POST'
+                });
+            } else {
+                showToast('Invalid credentials', 'error');
+                await sendTelemetry({
+                    event_type: 'LOGIN_FAILED',
+                    severity: 'MEDIUM',
+                    message: 'Invalid password provided during login',
+                    username: user,
+                    request_path: '/api/login',
+                    http_method: 'POST',
+                    metadata: { attempted_password_length: pass.length }
+                });
+            }
+        });
+
+        // 2. Simulators
+        async function simulateBruteForce() {
+            showToast('Initiating brute force simulation...', 'error');
+            logToTerminal('> Starting 20 failed login requests...');
+            
+            for(let i=1; i<=20; i++) {
+                setTimeout(async () => {
+                    await sendTelemetry({
+                        event_type: 'LOGIN_FAILED',
+                        severity: 'MEDIUM',
+                        message: `Automated brute force attempt ${i}`,
+                        username: 'admin',
+                        request_path: '/api/login',
+                        http_method: 'POST',
+                        metadata: { tool: 'Hydra/FakeBot', attempt: i }
+                    });
+                }, i * 150);
+            }
+        }
+
+        async function simulateCredentialStuffing() {
+            showToast('Simulating Credential Stuffing...', 'error');
+            const usernames = ['admin', 'test', 'user1', 'guest', 'support', 'root', 'sales', 'info', 'ayush', 'system'];
+            
+            for(let i=0; i<usernames.length; i++) {
+                setTimeout(async () => {
+                    await sendTelemetry({
+                        event_type: 'LOGIN_FAILED',
+                        severity: 'MEDIUM',
+                        message: `Credential stuffing attempt on ${usernames[i]}`,
+                        username: usernames[i],
+                        request_path: '/api/login',
+                        http_method: 'POST',
+                        metadata: { tool: 'SentryMBA' }
+                    });
+                }, i * 200);
+            }
+        }
+
+        async function simulateSQLInjection() {
+            showToast('Simulating SQL Injection payload', 'error');
+            // Triggers the "Possible SQL Injection" pattern rule in SOC
+            await sendTelemetry({
+                event_type: 'API_REQUEST',
+                severity: 'HIGH',
+                message: 'API request payload matching SQL injection pattern',
+                username: 'anonymous',
+                request_path: "/api/products/search?q=' OR '1'='1",
+                http_method: 'GET'
+            });
+        }
+
+        async function simulatePathTraversal() {
+            showToast('Simulating Path Traversal payload', 'error');
+            // Triggers the "Possible Path Traversal" pattern rule in SOC
+            await sendTelemetry({
+                event_type: 'API_REQUEST',
+                severity: 'HIGH',
+                message: 'API request payload matching Path Traversal pattern',
+                username: 'anonymous',
+                request_path: "/api/download?file=../../../etc/passwd",
+                http_method: 'GET'
+            });
+        }
+
+        async function simulateIDOR() {
+            showToast('Simulating Repeated Auth Failures', 'error');
+            // Sends 6 PERMISSION_DENIED to trigger threshold
+            for(let i=1; i<=6; i++) {
+                setTimeout(async () => {
+                    await sendTelemetry({
+                        event_type: 'PERMISSION_DENIED',
+                        severity: 'MEDIUM',
+                        message: 'Standard user attempted to access admin settings dashboard',
+                        username: 'student@manit.ac.in',
+                        user_id: 'usr_abc123',
+                        request_path: '/api/admin/settings',
+                        http_method: 'GET'
+                    });
+                }, i * 200);
+            }
+        }
+
+        async function simulatePasswordSpray() {
+            showToast('Simulating Password Spraying...', 'error');
+            for(let i=1; i<=10; i++) {
+                setTimeout(async () => {
+                    await sendTelemetry({
+                        event_type: 'LOGIN_FAILED',
+                        severity: 'MEDIUM',
+                        message: `Password spray attempt on admin`,
+                        username: 'admin',
+                        source_ip: `10.0.0.${100+i}`, // Spoofing IP for the demo
+                        request_path: '/api/login',
+                        http_method: 'POST'
+                    });
+                }, i * 200);
+            }
+        }
+
+        async function simulatePrivilegeEscalation() {
+            showToast('Simulating Privilege Escalation...', 'error');
+            // 1. Permission Denied
+            await sendTelemetry({
+                event_type: 'PERMISSION_DENIED',
+                severity: 'HIGH',
+                message: 'Unauthorized access to admin settings',
+                username: 'hacker1',
+                user_id: 'usr_hacker',
+                request_path: '/admin/settings',
+                http_method: 'GET'
+            });
+            
+            // 2. Admin Action shortly after (Triggers Sequence Rule)
+            setTimeout(async () => {
+                await sendTelemetry({
+                    event_type: 'ADMIN_ACTION',
+                    severity: 'CRITICAL',
+                    message: 'Admin updated global settings',
+                    username: 'hacker1',
+                    user_id: 'usr_hacker',
+                    request_path: '/admin/settings',
+                    http_method: 'POST'
+                });
+            }, 1000);
+        }
+
+        async function simulateXSS() {
+            showToast('Simulating XSS Attack...', 'error');
+            await sendTelemetry({
+                event_type: 'API_REQUEST',
+                severity: 'HIGH',
+                message: 'API request payload matching XSS pattern',
+                username: 'anonymous',
+                request_path: "/api/comments?body=<script>alert('XSS')<\\/script>",
+                http_method: 'POST'
+            });
+        }
+
+        async function simulateAPIDDoS() {
+            showToast('Simulating API Abuse...', 'error');
+            logToTerminal('> Firing 110 requests...');
+            for(let i=1; i<=110; i++) {
+                setTimeout(async () => {
+                    await sendTelemetry({
+                        event_type: 'API_REQUEST',
+                        severity: 'INFO',
+                        message: `Bulk request ${i}`,
+                        request_path: '/api/data',
+                        http_method: 'GET'
+                    });
+                }, i * 10); // Very fast to trigger threshold
+            }
+        }
+
+    </script>
+</body>
+</html>

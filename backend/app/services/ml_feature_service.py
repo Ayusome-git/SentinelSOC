@@ -146,13 +146,10 @@ class FeatureExtractionService:
             if event.source_ip:
                 unique_ips.add(event.source_ip)
             
-            if event.details:
-                username = event.details.get("username")
-                if username:
-                    unique_users.add(username)
-                path = event.details.get("request_path")
-                if path:
-                    unique_paths.add(path)
+            if event.username:
+                unique_users.add(event.username)
+            if event.request_path:
+                unique_paths.add(event.request_path)
                     
         # Ratios (safe division)
         error_ratio = api_error_count / event_count if event_count > 0 else 0.0

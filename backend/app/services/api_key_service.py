@@ -1,4 +1,6 @@
 import uuid
+import hashlib
+import logging
 from datetime import datetime, timezone
 from typing import Tuple, List, Optional
 from fastapi import HTTPException, status, Request
@@ -9,6 +11,10 @@ from app.models.application import Application, AppStatus
 from app.schemas.application_api_key import ApiKeyCreate, ApiKeyStatusUpdate
 from app.core.api_key import generate_api_key, extract_key_prefix, verify_api_key
 from app.services.audit_service import create_audit_log
+from app.core.redis import get_sync_redis_client
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 MAX_API_KEYS_PER_APP = 20
 
@@ -81,6 +87,23 @@ def list_api_keys(
     return db.query(ApplicationApiKey).filter(ApplicationApiKey.application_id == application_id).order_by(ApplicationApiKey.created_at.desc()).all()
 
 
+def invalidate_application_api_key_cache(application_id: uuid.UUID | str) -> None:
+    """
+    Invalidates cached API keys associated with an application in Redis.
+    """
+    try:
+        r = get_sync_redis_client()
+        set_key = f"app:apikeys:{str(application_id)}"
+        cached_keys = r.smembers(set_key)
+        if cached_keys:
+            for k in cached_keys:
+                r.delete(k)
+            r.delete(set_key)
+            logger.debug(f"Invalidated {len(cached_keys)} cached API keys for app {application_id}")
+    except Exception as exc:
+        logger.debug(f"Error invalidating API key cache for app {application_id}: {exc}")
+
+
 def revoke_api_key(
     db: Session,
     *,
@@ -103,6 +126,9 @@ def revoke_api_key(
 
     db_obj.is_active = data.is_active
 
+    # Invalidate cache so revoked key cannot authenticate from cache
+    invalidate_application_api_key_cache(application_id)
+
     action = "API_KEY_REVOKED" if not data.is_active else "API_KEY_REACTIVATED"
     
     create_audit_log(
@@ -123,6 +149,7 @@ def revoke_api_key(
 def authenticate_api_key(db: Session, raw_api_key: str) -> Application:
     """
     Validates an API key and returns the associated application.
+    Checks Redis cache first to bypass expensive Argon2id hash verification.
     Raises 401 Unauthorized for any failure.
     """
     invalid_cred_exception = HTTPException(
@@ -135,8 +162,27 @@ def authenticate_api_key(db: Session, raw_api_key: str) -> Application:
     if not prefix:
         raise invalid_cred_exception
 
-    # Query candidate keys by prefix
-    # Multiple keys might have the same prefix by random chance
+    # Compute fast SHA-256 fingerprint for Redis caching
+    key_digest = hashlib.sha256(raw_api_key.encode("utf-8")).hexdigest()
+    cache_key = f"apikey:cache:{prefix}:{key_digest}"
+    redis_client = None
+
+    try:
+        redis_client = get_sync_redis_client()
+        cached_app_id = redis_client.get(cache_key)
+        if cached_app_id:
+            # Fast Path: Validated key cached! Fetch active application by ID
+            app_uuid = uuid.UUID(cached_app_id)
+            application = db.query(Application).filter(Application.id == app_uuid).first()
+            if application and application.status == AppStatus.ACTIVE.value:
+                return application
+            else:
+                # Application was deactivated, delete invalid cache entry
+                redis_client.delete(cache_key)
+    except Exception as exc:
+        logger.debug(f"Redis API key cache lookup failed ({exc}), falling back to database.")
+
+    # Cache Miss / Slow Path: Query candidate keys and run Argon2id
     candidates = db.query(ApplicationApiKey).filter(
         ApplicationApiKey.key_prefix == prefix
     ).all()
@@ -163,8 +209,26 @@ def authenticate_api_key(db: Session, raw_api_key: str) -> Application:
     if application.status != AppStatus.ACTIVE.value:
         raise invalid_cred_exception
 
-    # Update last_used_at
-    valid_key.last_used_at = datetime.now(timezone.utc)
-    db.commit()
+    # Cache successful validation in Redis
+    if redis_client:
+        try:
+            ttl = getattr(settings, "API_KEY_CACHE_TTL_SECONDS", 300)
+            redis_client.set(cache_key, str(application.id), ex=ttl)
+            # Track key under application set for invalidation on revocation
+            set_key = f"app:apikeys:{str(application.id)}"
+            redis_client.sadd(set_key, cache_key)
+            redis_client.expire(set_key, ttl + 60)
+        except Exception as exc:
+            logger.debug(f"Redis API key cache write failed: {exc}")
+
+    # Update last_used_at with throttle to avoid excessive DB writes
+    now = datetime.now(timezone.utc)
+    last_used = valid_key.last_used_at
+    if last_used and last_used.tzinfo is None:
+        last_used = last_used.replace(tzinfo=timezone.utc)
+
+    if not last_used or (now - last_used).total_seconds() > 60:
+        valid_key.last_used_at = now
+        db.commit()
 
     return application

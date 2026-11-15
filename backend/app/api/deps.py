@@ -57,7 +57,15 @@ def get_current_user(db: SessionDep, token: TokenDep) -> User:
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    user = db.query(User).filter(User.id == token_data.sub).first()
+    try:
+        user_uuid = uuid.UUID(str(token_data.sub))
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user = db.query(User).filter(User.id == user_uuid).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:
@@ -132,12 +140,17 @@ def filter_query_by_app_access(query: Query, model: Type[T], current_user: User)
     """
     Filter a SQLAlchemy query to only return records the user is authorized to see.
     Assumes the model has an `application_id` column, unless the model IS Application, 
-    in which case it filters by `id`.
+    in which case it filters by `owner_id`.
     """
     if current_user.role == UserRole.ADMIN:
         return query
         
+    from app.models.application import Application
+    from sqlalchemy import select
+    
     if model.__name__ == "Application":
-        return query.filter(model.id == current_user.id)
+        return query.filter(model.owner_id == current_user.id)
     else:
-        return query.filter(model.application_id == current_user.id)
+        return query.filter(model.application_id.in_(
+            select(Application.id).where(Application.owner_id == current_user.id)
+        ))

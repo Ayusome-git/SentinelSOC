@@ -76,6 +76,7 @@ def normalize_and_store_event(db: Session, application: Application, event_in: E
 
 def _build_filter_query(
     db: Session,
+    current_user=None,
     application_id: Optional[UUID] = None,
     event_types: Optional[List[str]] = None,
     severities: Optional[List[str]] = None,
@@ -91,13 +92,14 @@ def _build_filter_query(
 ):
     if is_analytics:
         query = db.query(SecurityEvent)
-    if current_user:
-        from app.api import deps
-        query = deps.filter_query_by_app_access(query, SecurityEvent, current_user)
     else:
         query = db.query(SecurityEvent, Application.name.label("application_name")).join(
             Application, SecurityEvent.application_id == Application.id
         )
+
+    if current_user:
+        from app.api import deps
+        query = deps.filter_query_by_app_access(query, SecurityEvent, current_user)
 
     if application_id:
         query = query.filter(SecurityEvent.application_id == application_id)
@@ -160,7 +162,7 @@ def list_events(
             raise HTTPException(status_code=400, detail="Time range cannot exceed 90 days")
 
     query = _build_filter_query(
-        db, application_id, event_types, severities, start_date, end_date,
+        db, current_user, application_id, event_types, severities, start_date, end_date,
         source_ip, username, request_path, request_id, session_id, search
     )
 
@@ -214,7 +216,7 @@ def get_event_analytics(
         raise HTTPException(status_code=400, detail="Time range cannot exceed 90 days")
 
     query = _build_filter_query(
-        db, application_id, event_types, severities, start_date, end_date,
+        db, current_user, application_id, event_types, severities, start_date, end_date,
         source_ip, username, request_path, request_id, session_id, search,
         is_analytics=True
     )
@@ -240,7 +242,7 @@ def get_event_analytics(
             
     # For applications, we need a join
     app_query = _build_filter_query(
-        db, application_id, event_types, severities, start_date, end_date,
+        db, current_user, application_id, event_types, severities, start_date, end_date,
         source_ip, username, request_path, request_id, session_id, search,
         is_analytics=False
     )

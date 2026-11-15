@@ -116,6 +116,13 @@ class IncidentService:
         db.add(incident)
         incident.alerts.append(alert)
         
+        # Link the triggering security event to the incident so metrics populate
+        if alert.security_event_id:
+            from app.models.security_event import SecurityEvent
+            event = db.query(SecurityEvent).filter_by(id=alert.security_event_id).first()
+            if event:
+                incident.events.append(event)
+        
         IncidentService._recalculate_risk(incident)
         
         db.commit()

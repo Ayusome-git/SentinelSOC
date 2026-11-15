@@ -19,6 +19,21 @@ services:
     networks:
       - sentinelsoc_network_prod
 
+  redis:
+    image: redis:7-alpine
+    container_name: sentinelsoc_redis_prod
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data_prod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sentinelsoc_network_prod
+
   backend:
     build:
       context: ./backend
@@ -28,6 +43,7 @@ services:
     environment:
       - ENVIRONMENT=production
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - SECRET_KEY=${SECRET_KEY}
       - ML_MODEL_DIRECTORY=/app/ml_models
       - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
@@ -46,6 +62,33 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sentinelsoc_network_prod
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sentinelsoc_worker_prod
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - SECRET_KEY=${SECRET_KEY}
+      - ML_MODEL_DIRECTORY=/app/ml_models
+      - TI_PROVIDER=${TI_PROVIDER}
+      - TI_API_KEY=${TI_API_KEY}
+    volumes:
+      - ml_models_data_prod:/app/ml_models
+    command: python -m app.workers.event_worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - sentinelsoc_network_prod
 
@@ -53,6 +96,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-}
     container_name: sentinelsoc_frontend_prod
     restart: unless-stopped
     environment:
@@ -92,3 +137,4 @@ networks:
 volumes:
   postgres_data_prod:
   ml_models_data_prod:
+  redis_data_prod:

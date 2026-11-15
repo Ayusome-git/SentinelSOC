@@ -63,11 +63,10 @@ class MLTrainingService:
         if user_id:
             audit = AuditLog(
                 user_id=user_id,
-                application_id=application_id,
                 action="ML_MODEL_TRAINING_STARTED",
                 resource_type="ML_MODEL",
                 resource_id=str(db_model.id),
-                details={"training_days": training_days}
+                details={"training_days": training_days, "application_id": str(application_id) if application_id else None}
             )
             db.add(audit)
             db.commit()
@@ -144,11 +143,10 @@ class MLTrainingService:
             if user_id:
                 audit = AuditLog(
                     user_id=user_id,
-                    application_id=application_id,
                     action="ML_MODEL_TRAINED",
                     resource_type="ML_MODEL",
                     resource_id=str(db_model.id),
-                    details={"samples": len(windows)}
+                    details={"samples": len(windows), "application_id": str(application_id) if application_id else None}
                 )
                 db.add(audit)
                 db.commit()
@@ -168,11 +166,10 @@ class MLTrainingService:
             if user_id:
                 audit = AuditLog(
                     user_id=user_id,
-                    application_id=application_id,
                     action="ML_MODEL_TRAINING_FAILED",
                     resource_type="ML_MODEL",
                     resource_id=str(db_model.id),
-                    details={"error": str(e)}
+                    details={"error": str(e), "application_id": str(application_id) if application_id else None}
                 )
                 db.add(audit)
                 db.commit()

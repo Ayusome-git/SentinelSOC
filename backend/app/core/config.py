@@ -15,16 +15,30 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://sentinelsoc:password@localhost:5432/sentinelsoc")
     SECRET_KEY: str = os.getenv("SECRET_KEY", "super_secret_key_placeholder")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "720"))
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     API_HOST: str = os.getenv("API_HOST", "0.0.0.0")
     API_PORT: int = int(os.getenv("API_PORT", "8000"))
+
+    # Redis & Message Queue Configuration
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    REDIS_STREAM_NAME: str = os.getenv("REDIS_STREAM_NAME", "sentinelsoc:events:stream")
+    REDIS_CONSUMER_GROUP: str = os.getenv("REDIS_CONSUMER_GROUP", "sentinelsoc_consumers")
+    REDIS_MAX_CONNECTIONS: int = int(os.getenv("REDIS_MAX_CONNECTIONS", "50"))
+    REDIS_SOCKET_CONNECT_TIMEOUT: float = float(os.getenv("REDIS_SOCKET_CONNECT_TIMEOUT", "1.0"))
+    REDIS_SOCKET_TIMEOUT: float = float(os.getenv("REDIS_SOCKET_TIMEOUT", "1.5"))
+    API_KEY_CACHE_TTL_SECONDS: int = int(os.getenv("API_KEY_CACHE_TTL_SECONDS", "300"))
+    INGESTION_QUEUE_ENABLED: bool = os.getenv("INGESTION_QUEUE_ENABLED", "True").lower() in ("true", "1", "yes")
+    WORKER_BATCH_SIZE: int = int(os.getenv("WORKER_BATCH_SIZE", "100"))
+    WORKER_BLOCK_MS: int = int(os.getenv("WORKER_BLOCK_MS", "2000"))
 
 
     # Rate Limiting & Security
     AUTH_RATE_LIMIT_ENABLED: bool = True
     AUTH_MAX_ATTEMPTS: int = 10
     AUTH_LOCKOUT_SECONDS: int = 300
+    EVENT_RATE_LIMIT_ENABLED: bool = True
+    EVENT_MAX_REQUESTS_PER_MINUTE: int = 6000
     MAX_EVENT_PAYLOAD_BYTES: int = 65536
 
     # ML Configuration

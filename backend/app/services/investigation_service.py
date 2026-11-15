@@ -32,25 +32,28 @@ class InvestigationService:
         
         # 1. Gather Security Events (via incident_events)
         if not entry_types or TimelineEntryType.SECURITY_EVENT.value in entry_types:
-            for event in incident.events:
+            for item in incident.events:
+                # Handle case where SQLAlchemy might return a tuple
+                event = item[0] if isinstance(item, tuple) else item
+                
                 # Optional search filter
                 if search:
                     search_lower = search.lower()
-                    if not (search_lower in (event.title or "").lower() or 
+                    if not (search_lower in (event.event_type or "").lower() or 
                             search_lower in (event.source_ip or "").lower() or 
-                            search_lower in str(event.details or "").lower()):
+                            search_lower in str(event.metadata_ or "").lower()):
                         continue
                         
                 entries.append(TimelineEntry(
                     id=event.id,
                     entry_type=TimelineEntryType.SECURITY_EVENT,
                     occurred_at=event.timestamp,
-                    title=event.title or event.event_type,
-                    description=event.description,
+                    title=event.event_type,
+                    description=event.message,
                     severity=event.severity,
                     security_event_id=event.id,
                     source_ip=event.source_ip,
-                    username=event.details.get("username") if event.details else None,
+                    username=event.metadata_.get("username") if event.metadata_ else None,
                     metadata_fields={"app_id": str(event.application_id)}
                 ))
                 
@@ -119,8 +122,15 @@ class InvestigationService:
                     metadata_fields=log.details
                 ))
                 
-        # Sort chronologically
-        entries.sort(key=lambda x: (x.occurred_at, x.entry_type))
+        # Sort chronologically, ensuring all datetimes are offset-aware
+        from datetime import timezone
+        def make_aware(dt):
+            if not dt: return datetime.min.replace(tzinfo=timezone.utc)
+            if dt.tzinfo is None:
+                return dt.replace(tzinfo=timezone.utc)
+            return dt
+            
+        entries.sort(key=lambda x: (make_aware(x.occurred_at), x.entry_type))
         
         # Paginate
         return entries[offset:offset+limit]
@@ -146,22 +156,24 @@ class InvestigationService:
         path_counts: Dict[str, int] = {}
         session_counts: Dict[str, int] = {}
         
-        for ev in events:
+        for item in events:
+            ev = item[0] if isinstance(item, tuple) else item
+            
             # Source IP
             if ev.source_ip:
                 ip_counts[ev.source_ip] = ip_counts.get(ev.source_ip, 0) + 1
             
-            # Username and Session from details
-            if ev.details:
-                username = ev.details.get("username")
+            # Username and Session from metadata_
+            if ev.metadata_:
+                username = ev.metadata_.get("username")
                 if username:
                     user_counts[username] = user_counts.get(username, 0) + 1
                     
-                session = ev.details.get("session_id")
+                session = ev.metadata_.get("session_id")
                 if session:
                     session_counts[session] = session_counts.get(session, 0) + 1
                     
-                path = ev.details.get("request_path")
+                path = ev.metadata_.get("request_path")
                 if path:
                     path_counts[path] = path_counts.get(path, 0) + 1
 
@@ -225,14 +237,16 @@ class InvestigationService:
         users = set()
         sessions = set()
         
-        for ev in incident.events:
+        for item in incident.events:
+            ev = item[0] if isinstance(item, tuple) else item
+            
             if ev.source_ip:
                 ips.add(ev.source_ip)
-            if ev.details:
-                if ev.details.get("username"):
-                    users.add(ev.details.get("username"))
-                if ev.details.get("session_id"):
-                    sessions.add(ev.details.get("session_id"))
+            if ev.metadata_:
+                if ev.metadata_.get("username"):
+                    users.add(ev.metadata_.get("username"))
+                if ev.metadata_.get("session_id"):
+                    sessions.add(ev.metadata_.get("session_id"))
                     
         if not ips and not users and not sessions:
             return []

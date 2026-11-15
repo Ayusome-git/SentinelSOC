@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, Query, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import Optional, List
@@ -6,8 +7,15 @@ from uuid import UUID
 
 from app.api import deps
 from app.core.rate_limit import check_rate_limit
-from app.schemas.security_event import EventCreate, EventListResponse, EventAnalyticsResponse
+from app.schemas.security_event import (
+    EventCreate,
+    EventBatchCreate,
+    EventBatchResponse,
+    EventListResponse,
+    EventAnalyticsResponse
+)
 from app.services.event_service import normalize_and_store_event, list_events, get_event_analytics
+from app.services.event_queue_service import serialize_event, enqueue_event_async, enqueue_batch_async
 from app.services.ml_anomaly_service import MLAnomalyDetectionService
 from app.threat_intel.service import ThreatIntelEnrichmentService
 from app.models.application import Application
@@ -15,6 +23,8 @@ from app.models.user import User
 
 from fastapi import Request
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 async def verify_payload_size(request: Request):
     if request.method == 'POST':
@@ -27,7 +37,7 @@ async def verify_payload_size(request: Request):
 router = APIRouter()
 
 @router.post("", status_code=status.HTTP_201_CREATED, dependencies=[Depends(check_rate_limit), Depends(verify_payload_size)])
-def ingest_event(
+async def ingest_event(
     *,
     db: Session = Depends(deps.get_db),
     application: Application = Depends(deps.get_application_from_api_key),
@@ -37,7 +47,17 @@ def ingest_event(
     """
     Ingest a security event from an external application.
     Must be authenticated with an X-API-Key header.
+    When Redis queue mode is enabled, enqueues the event directly for high throughput.
     """
+    if getattr(settings, "INGESTION_QUEUE_ENABLED", True):
+        try:
+            event_id, payload = serialize_event(application.id, event_in)
+            await enqueue_event_async(payload)
+            return {"event_id": event_id, "status": "accepted"}
+        except Exception as exc:
+            logger.warning(f"Failed to enqueue event to Redis queue ({exc}), falling back to direct database insertion.")
+
+    # Fallback to direct synchronous processing
     event_id = normalize_and_store_event(db=db, application=application, event_in=event_in)
     
     # Trigger background ML anomaly detection for the previously completed window
@@ -55,6 +75,39 @@ def ingest_event(
     )
     
     return {"event_id": event_id, "status": "accepted"}
+
+@router.post("/batch", response_model=EventBatchResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(check_rate_limit), Depends(verify_payload_size)])
+async def ingest_events_batch(
+    *,
+    db: Session = Depends(deps.get_db),
+    application: Application = Depends(deps.get_application_from_api_key),
+    batch_in: EventBatchCreate,
+    background_tasks: BackgroundTasks
+):
+    """
+    Ingest a batch of security events from an external application (up to 500 events).
+    Pushes events directly to Redis Streams with pipeline acceleration.
+    """
+    event_ids = []
+    payloads = []
+    for event_in in batch_in.events:
+        eid, payload = serialize_event(application.id, event_in)
+        event_ids.append(eid)
+        payloads.append(payload)
+
+    if getattr(settings, "INGESTION_QUEUE_ENABLED", True):
+        try:
+            count = await enqueue_batch_async(payloads)
+            return EventBatchResponse(queued=count, event_ids=event_ids, status="accepted")
+        except Exception as exc:
+            logger.warning(f"Batch enqueue to Redis queue failed ({exc}), falling back to direct database insertion.")
+
+    # Fallback to synchronous insertion if queue is disabled or offline
+    for event_in in batch_in.events:
+        normalize_and_store_event(db=db, application=application, event_in=event_in)
+
+    return EventBatchResponse(queued=len(event_ids), event_ids=event_ids, status="accepted")
+
 
 @router.get("", response_model=EventListResponse)
 def get_events(

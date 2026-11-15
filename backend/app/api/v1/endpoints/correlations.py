@@ -90,17 +90,27 @@ def get_correlation(
     
     evidence_list = []
     
+    from app.models.application import Application
     # Get events
-    events_query = db.query(correlation_events.c.sequence_position, SecurityEvent).join(
+    events_query = db.query(
+        correlation_events.c.sequence_position, 
+        SecurityEvent,
+        Application.name.label("application_name")
+    ).join(
         SecurityEvent, correlation_events.c.security_event_id == SecurityEvent.id
+    ).join(
+        Application, SecurityEvent.application_id == Application.id
     ).filter(correlation_events.c.correlation_id == correlation_id).all()
     
-    for pos, ev in events_query:
+    for pos, ev, app_name in events_query:
+        resp_data = {k: getattr(ev, k) for k in ev.__mapper__.columns.keys()}
+        resp_data["application_name"] = app_name
+        
         evidence_list.append(CorrelationEvidence(
             id=ev.id,
             type="EVENT",
             timestamp=ev.timestamp,
-            data=EventResponse.model_validate(ev),
+            data=EventResponse.model_validate(resp_data),
             sequence_position=pos
         ))
         

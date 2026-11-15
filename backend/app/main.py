@@ -1,6 +1,11 @@
+from contextlib import asynccontextmanager
+import logging
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+from app.core.redis import close_redis, ping_redis, ensure_stream_group
+
+logger = logging.getLogger(__name__)
 from app.api.v1.endpoints import (
     health,
     auth,
@@ -21,10 +26,47 @@ from app.api.v1.endpoints import (
     reports,
 )
 
+tags_metadata = [
+    {"name": "auth", "description": "Authentication operations (JWT)."},
+    {"name": "users", "description": "User management operations."},
+    {"name": "applications", "description": "Manage external applications and their API Keys."},
+    {"name": "events", "description": "Event ingestion pipeline. Applications push events here."},
+    {"name": "dashboard", "description": "Aggregated statistics for the SOC dashboard."},
+    {"name": "rules", "description": "Configure deterministic detection thresholds."},
+    {"name": "alerts", "description": "View and manage threshold breaches."},
+    {"name": "correlations", "description": "View correlated attack chains."},
+    {"name": "incidents", "description": "Workspace for managing escalated threats."},
+    {"name": "ml", "description": "Unsupervised machine learning anomalies."},
+    {"name": "threat_intelligence", "description": "Indicator enrichment details."},
+    {"name": "response_actions", "description": "Safe human-in-the-loop response framework."},
+    {"name": "notifications", "description": "Internal and email notification dispatch."},
+    {"name": "reports", "description": "Generate and export compliance reports."},
+]
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("Starting SentinelSOC API...")
+    is_redis_up = await ping_redis()
+    if is_redis_up:
+        logger.info(f"Connected to Redis at {settings.REDIS_URL}")
+        try:
+            await ensure_stream_group(settings.REDIS_STREAM_NAME, settings.REDIS_CONSUMER_GROUP)
+        except Exception as exc:
+            logger.warning(f"Could not initialize Redis stream/group: {exc}")
+    else:
+        logger.warning(f"Redis is not reachable at {settings.REDIS_URL}. Running in standalone mode.")
+    yield
+    # Shutdown
+    logger.info("Shutting down SentinelSOC API...")
+    await close_redis()
+
 app = FastAPI(
     title="SentinelSOC API",
     version="1.0.0",
-    description="AI-powered, application-agnostic Security Operations Center (SOC) platform API."
+    description="AI-powered, application-agnostic Security Operations Center (SOC) platform API.",
+    openapi_tags=tags_metadata,
+    lifespan=lifespan
 )
 
 

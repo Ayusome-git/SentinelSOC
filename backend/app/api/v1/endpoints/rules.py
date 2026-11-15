@@ -2,7 +2,7 @@ import uuid
 from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, or_
+from sqlalchemy import desc, or_, select, and_, func
 
 from app.api import deps
 from app.models.user import User
@@ -63,7 +63,7 @@ def list_rules(
     if conditions:
         stmt = stmt.where(and_(*conditions))
     
-    from sqlalchemy import func, and_
+
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     stmt = stmt.order_by(desc(DetectionRule.created_at)).offset(skip).limit(limit)
     
@@ -187,7 +187,7 @@ def update_rule_status(
     db.commit()
     db.refresh(rule)
     
-    audit_action(
+    create_audit_log(
         db=db,
         actor_id=current_user.id,
         action="RULE_STATUS_UPDATE",

@@ -68,6 +68,14 @@ class EventCreate(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
+class EventBatchCreate(BaseModel):
+    events: List[EventCreate] = Field(..., min_length=1, max_length=500)
+
+class EventBatchResponse(BaseModel):
+    queued: int
+    event_ids: List[str]
+    status: str = "accepted"
+
 class EventResponse(BaseModel):
     id: UUID
     application_id: UUID

@@ -54,13 +54,25 @@ def train_model(
     if request.training_days < 1 or request.training_days > 90:
         raise HTTPException(status_code=400, detail="Training days must be between 1 and 90")
         
-    # Schedule the training job in the background to avoid blocking
+    def run_training_task(app_id, t_days, u_id):
+        from app.db.session import SessionLocal
+        bg_db = SessionLocal()
+        try:
+            MLTrainingService.train_model(
+                db=bg_db,
+                application_id=app_id,
+                training_days=t_days,
+                user_id=u_id
+            )
+        finally:
+            bg_db.close()
+
+    # Schedule the training job in the background with its own DB session
     background_tasks.add_task(
-        MLTrainingService.train_model,
-        db=db,
-        application_id=request.application_id,
-        training_days=request.training_days,
-        user_id=current_user.id
+        run_training_task,
+        app_id=request.application_id,
+        t_days=request.training_days,
+        u_id=current_user.id
     )
     
     return {"message": "Model training triggered in background"}

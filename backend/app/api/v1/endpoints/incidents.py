@@ -8,6 +8,7 @@ from app.db.session import get_db
 from app.models.user import User
 from app.models.incident import Incident, IncidentStatus
 from app.models.incident_comment import IncidentComment
+from app.api import deps
 from app.api.deps import get_current_user, require_permission
 from app.core.permissions import Permission
 from app.schemas.incident import (
@@ -331,7 +332,8 @@ def get_incident_related_events(
     
     # Map to EventResponse manually because schemas are slightly different
     result = []
-    for ev in events:
+    for item in events:
+        ev = item[0] if isinstance(item, tuple) else item
         result.append(EventResponse(
             id=ev.id,
             application_id=ev.application_id,
@@ -340,14 +342,14 @@ def get_incident_related_events(
             severity=ev.severity,
             timestamp=ev.timestamp,
             source_ip=ev.source_ip,
-            user_id=ev.details.get("user_id") if ev.details else None,
-            username=ev.details.get("username") if ev.details else None,
-            session_id=ev.details.get("session_id") if ev.details else None,
-            request_id=ev.details.get("request_id") if ev.details else None,
-            http_method=ev.details.get("http_method") if ev.details else None,
-            request_path=ev.details.get("request_path") if ev.details else None,
-            user_agent=ev.details.get("user_agent") if ev.details else None,
-            message=ev.title or ev.description
+            user_id=ev.metadata_.get("user_id") if ev.metadata_ else None,
+            username=ev.metadata_.get("username") if ev.metadata_ else None,
+            session_id=ev.metadata_.get("session_id") if ev.metadata_ else None,
+            request_id=ev.metadata_.get("request_id") if ev.metadata_ else None,
+            http_method=ev.metadata_.get("http_method") if ev.metadata_ else None,
+            request_path=ev.metadata_.get("request_path") if ev.metadata_ else None,
+            user_agent=ev.metadata_.get("user_agent") if ev.metadata_ else None,
+            message=ev.message or ev.event_type
         ))
     return result
 
