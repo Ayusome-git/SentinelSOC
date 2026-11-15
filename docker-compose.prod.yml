@@ -123,7 +123,7 @@ services:
       - frontend
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1/health || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3

@@ -11,23 +11,32 @@ def validate_email(email: str) -> bool:
     return re.match(pattern, email) is not None
 
 def main():
+    parser = argparse.ArgumentParser(description="Create initial administrator user.")
+    parser.add_argument("--email", help="Admin email address")
+    parser.add_argument("--password", help="Admin password")
+    parser.add_argument("--full-name", dest="full_name", help="Admin full name")
+    args = parser.parse_args()
+
     print("=== SentinelSOC Initial Administrator Creation ===")
     
-    email = input("Email: ").strip().lower()
+    email = (args.email or input("Email: ")).strip().lower()
     if not validate_email(email):
         print("Error: Invalid email format.")
         return
         
-    full_name = input("Full Name: ").strip()
+    full_name = (args.full_name or input("Full Name: ")).strip()
     
-    password = getpass.getpass("Password: ")
+    if args.password:
+        password = args.password
+    else:
+        password = getpass.getpass("Password: ")
+        confirm_password = getpass.getpass("Confirm Password: ")
+        if password != confirm_password:
+            print("Error: Passwords do not match.")
+            return
+
     if len(password) < 8:
         print("Error: Password must be at least 8 characters long.")
-        return
-        
-    confirm_password = getpass.getpass("Confirm Password: ")
-    if password != confirm_password:
-        print("Error: Passwords do not match.")
         return
 
     db: Session = SessionLocal()
