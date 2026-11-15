@@ -6,10 +6,14 @@
  */
 
 export const getApiBase = (): string => {
-  if (process.env.NEXT_PUBLIC_API_URL !== undefined && process.env.NEXT_PUBLIC_API_URL !== '') {
-    return process.env.NEXT_PUBLIC_API_URL
+  if (typeof window !== 'undefined') {
+    const url = process.env.NEXT_PUBLIC_API_URL
+    if (url && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+      return url.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '')
+    }
+    return ''
   }
-  return typeof window !== 'undefined' ? '' : 'http://backend:8000'
+  return 'http://backend:8000'
 }
 
 export const API_BASE = getApiBase()
