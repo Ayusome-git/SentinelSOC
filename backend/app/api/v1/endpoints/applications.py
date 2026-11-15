@@ -25,6 +25,47 @@ from app.services import application_service, api_key_service
 router = APIRouter()
 
 
+def serialize_application(app: Any) -> dict:
+    owner_name = "Unknown"
+    if getattr(app, "owner", None):
+        owner_name = app.owner.full_name or app.owner.email or "Unknown"
+
+    env_val = getattr(app, "environment", "DEVELOPMENT")
+    if hasattr(env_val, "value"):
+        env_val = env_val.value
+    if isinstance(env_val, str):
+        env_upper = env_val.upper()
+        if env_upper in AppEnvironment.__members__:
+            env_val = AppEnvironment[env_upper].value
+        elif env_upper == "TESTING":
+            env_val = "DEVELOPMENT"
+        else:
+            env_val = "DEVELOPMENT"
+
+    status_val = getattr(app, "status", "ACTIVE")
+    if hasattr(status_val, "value"):
+        status_val = status_val.value
+    if isinstance(status_val, str):
+        status_upper = status_val.upper()
+        if status_upper in AppStatus.__members__:
+            status_val = AppStatus[status_upper].value
+        else:
+            status_val = "ACTIVE"
+
+    return {
+        "id": app.id,
+        "name": app.name,
+        "slug": app.slug,
+        "description": app.description,
+        "environment": env_val,
+        "status": status_val,
+        "owner_id": app.owner_id,
+        "owner_name": owner_name or "Unknown",
+        "created_at": app.created_at,
+        "updated_at": app.updated_at
+    }
+
+
 @router.get("", response_model=ApplicationListResponse, dependencies=[Depends(deps.require_permission(Permission.APPLICATIONS_READ))])
 def list_applications(
     *,
@@ -50,25 +91,7 @@ def list_applications(
         page_size=page_size
     )
 
-    items = []
-    for app in applications:
-        # Pydantic schema expects owner_name which is derived from owner relationship
-        owner_name = app.owner.full_name if app.owner else "Unknown"
-        # We manually construct or let Pydantic extract it via from_attributes if we enrich the dict
-        # We can just let Pydantic handle it by adding owner_name attribute to a dummy obj, but it's simpler to use a dict
-        app_dict = {
-            "id": app.id,
-            "name": app.name,
-            "slug": app.slug,
-            "description": app.description,
-            "environment": app.environment,
-            "status": app.status,
-            "owner_id": app.owner_id,
-            "owner_name": owner_name,
-            "created_at": app.created_at,
-            "updated_at": app.updated_at
-        }
-        items.append(app_dict)
+    items = [serialize_application(app) for app in applications]
 
     return {
         "items": items,
@@ -95,19 +118,7 @@ def get_application(
             detail="Application not found"
         )
     
-    owner_name = app.owner.full_name if app.owner else "Unknown"
-    return {
-        "id": app.id,
-        "name": app.name,
-        "slug": app.slug,
-        "description": app.description,
-        "environment": app.environment,
-        "status": app.status,
-        "owner_id": app.owner_id,
-        "owner_name": owner_name,
-        "created_at": app.created_at,
-        "updated_at": app.updated_at
-    }
+    return serialize_application(app)
 
 
 @router.post("", response_model=ApplicationResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(deps.require_permission(Permission.APPLICATIONS_MANAGE))])
@@ -129,19 +140,7 @@ def create_application(
         request=request
     )
     
-    owner_name = app.owner.full_name if app.owner else "Unknown"
-    return {
-        "id": app.id,
-        "name": app.name,
-        "slug": app.slug,
-        "description": app.description,
-        "environment": app.environment,
-        "status": app.status,
-        "owner_id": app.owner_id,
-        "owner_name": owner_name,
-        "created_at": app.created_at,
-        "updated_at": app.updated_at
-    }
+    return serialize_application(app)
 
 
 @router.patch("/{application_id}", response_model=ApplicationResponse, dependencies=[Depends(deps.require_permission(Permission.APPLICATIONS_MANAGE))])
@@ -172,19 +171,7 @@ def update_application(
         request=request
     )
     
-    owner_name = app.owner.full_name if app.owner else "Unknown"
-    return {
-        "id": app.id,
-        "name": app.name,
-        "slug": app.slug,
-        "description": app.description,
-        "environment": app.environment,
-        "status": app.status,
-        "owner_id": app.owner_id,
-        "owner_name": owner_name,
-        "created_at": app.created_at,
-        "updated_at": app.updated_at
-    }
+    return serialize_application(app)
 
 
 @router.patch("/{application_id}/status", response_model=ApplicationResponse, dependencies=[Depends(deps.require_permission(Permission.APPLICATIONS_MANAGE))])
@@ -215,19 +202,7 @@ def change_application_status(
         request=request
     )
     
-    owner_name = app.owner.full_name if app.owner else "Unknown"
-    return {
-        "id": app.id,
-        "name": app.name,
-        "slug": app.slug,
-        "description": app.description,
-        "environment": app.environment,
-        "status": app.status,
-        "owner_id": app.owner_id,
-        "owner_name": owner_name,
-        "created_at": app.created_at,
-        "updated_at": app.updated_at
-    }
+    return serialize_application(app)
 
 
 @router.post("/{application_id}/api-keys", response_model=ApiKeyCreateResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(deps.require_permission(Permission.APPLICATIONS_MANAGE))])

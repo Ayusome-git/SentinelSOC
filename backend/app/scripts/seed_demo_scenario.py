@@ -48,7 +48,7 @@ async def run_scenario(reset: bool):
                 name="SentinelSOC Demo Application",
                 slug="sentinelsoc-demo-app",
                 description="Synthetic application for demonstration scenarios.",
-                environment="testing",
+                environment="DEVELOPMENT",
                 owner_id=admin_user.id
             )
             db.add(demo_app)

@@ -4,6 +4,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from app.api import deps
+from app.core.permissions import Permission
 from app.models.user import User
 from app.schemas.ml import MLModelResponse, MLTrainRequest
 from app.services.ml_training_service import MLTrainingService
@@ -14,7 +15,7 @@ router = APIRouter()
 @router.get("/models", response_model=List[MLModelResponse])
 def list_models(
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.require_permission("ML_READ")),
+    current_user: User = Depends(deps.require_permission(Permission.ML_READ)),
     application_id: Optional[UUID] = None
 ):
     """
@@ -31,7 +32,7 @@ def list_models(
 def get_model(
     model_id: UUID,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.require_permission("ML_READ"))
+    current_user: User = Depends(deps.require_permission(Permission.ML_READ))
 ):
     """
     Get detailed information about a specific ML model.
@@ -46,7 +47,7 @@ def train_model(
     request: MLTrainRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.require_permission("ML_MANAGE"))
+    current_user: User = Depends(deps.require_permission(Permission.ML_MANAGE))
 ):
     """
     Triggers background training of an ML model for a specific application.

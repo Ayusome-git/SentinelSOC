@@ -1,7 +1,7 @@
-from typing import Optional
+from typing import Optional, Any
 import uuid
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.application import AppEnvironment, AppStatus
 
@@ -39,11 +39,31 @@ class ApplicationResponse(ApplicationBase):
     slug: str
     status: AppStatus
     owner_id: uuid.UUID
-    owner_name: str
+    owner_name: Optional[str] = "Unknown"
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("environment", mode="before")
+    @classmethod
+    def coerce_environment(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            v_upper = v.upper()
+            if v_upper in AppEnvironment.__members__:
+                return AppEnvironment[v_upper]
+            return AppEnvironment.DEVELOPMENT
+        return v
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def coerce_status(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            v_upper = v.upper()
+            if v_upper in AppStatus.__members__:
+                return AppStatus[v_upper]
+            return AppStatus.ACTIVE
+        return v
 
 
 class ApplicationListResponse(BaseModel):

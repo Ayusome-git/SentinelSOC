@@ -9,6 +9,7 @@ class AppEnvironment(str, enum.Enum):
     DEVELOPMENT = "DEVELOPMENT"
     STAGING = "STAGING"
     PRODUCTION = "PRODUCTION"
+    TESTING = "TESTING"
 
 class AppStatus(str, enum.Enum):
     ACTIVE = "ACTIVE"
