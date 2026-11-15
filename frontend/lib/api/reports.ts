@@ -1,4 +1,4 @@
-import { api } from '../api';
+import { api, getApiBase } from '../api';
 import { 
   SecurityOverviewReport, AlertSummaryReport, IncidentSummaryReport, 
   AttackActivityReport, ApplicationSecurityReport, RiskAnalysisReport, 
@@ -69,7 +69,7 @@ export const exportSecurityOverview = async (params: ReportParams, format: 'pdf'
     headers['Authorization'] = `Bearer ${token}`;
   }
   
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/reports/security-overview/export?format=${format}&${buildQuery(params)}`, {
+  const res = await fetch(`${getApiBase()}/api/v1/reports/security-overview/export?format=${format}&${buildQuery(params)}`, {
     headers,
   });
   

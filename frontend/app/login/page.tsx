@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
+import { getApiBase } from '@/lib/api'
 import { Shield, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
@@ -19,7 +20,7 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const apiUrl = getApiBase()
       const response = await fetch(`${apiUrl}/api/v1/auth/login`, {
         method: 'POST',
         headers: {

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { getApiBase } from './api'
 
 // We store the token in localStorage for this phase since a dedicated
 // cookie-proxy backend for Next.js isn't set up yet.
@@ -36,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUser = async (token: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/auth/me`, {
+      const res = await fetch(`${getApiBase()}/api/v1/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -74,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const token = localStorage.getItem('sentinel_token')
     if (token) {
       try {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/auth/logout`, {
+        await fetch(`${getApiBase()}/api/v1/auth/logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`

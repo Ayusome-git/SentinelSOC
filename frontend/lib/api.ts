@@ -5,9 +5,14 @@
  * consistent error handling.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL !== undefined 
-  ? process.env.NEXT_PUBLIC_API_URL 
-  : (typeof window !== 'undefined' ? '' : 'http://localhost:8000')
+export const getApiBase = (): string => {
+  if (process.env.NEXT_PUBLIC_API_URL !== undefined && process.env.NEXT_PUBLIC_API_URL !== '') {
+    return process.env.NEXT_PUBLIC_API_URL
+  }
+  return typeof window !== 'undefined' ? '' : 'http://backend:8000'
+}
+
+export const API_BASE = getApiBase()
 
 function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem('sentinel_token')
